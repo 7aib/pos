@@ -26,23 +26,30 @@ static class Program
         // Initialize database and seed data
         InitializeDatabase();
 
-        // Resolve LoginForm
-        var loginForm = ServiceProvider.GetRequiredService<LoginForm>();
-
-        if (loginForm.ShowDialog() == DialogResult.OK && loginForm.AuthenticatedUser != null)
+        bool userRequestedLogout = true;
+        while (userRequestedLogout)
         {
-            // Run the main application
-            // Note: We're resolving MainForm from DI now to support injection
-            // We need to pass the user, so we can't use DI to resolve MainForm directly if it requires User in constructor
-            // unless we register User as a scoped service, which is a bit tricky with Transient Forms.
-            // Simpler to just manually instantiate MainForm here.
+            userRequestedLogout = false;
             
-            var mainForm = new MainForm(ServiceProvider, loginForm.AuthenticatedUser);
-            Application.Run(mainForm); 
-        }
-        else
-        {
-            Application.Exit();
+            // Resolve LoginForm - Create a new scope or use existing? 
+            // Since LoginForm is transient, we can resolve it.
+            var loginForm = ServiceProvider.GetRequiredService<LoginForm>();
+
+            if (loginForm.ShowDialog() == DialogResult.OK && loginForm.AuthenticatedUser != null)
+            {
+                var mainForm = new MainForm(ServiceProvider, loginForm.AuthenticatedUser);
+                Application.Run(mainForm);
+                
+                if (mainForm.IsLogout)
+                {
+                    userRequestedLogout = true;
+                }
+            }
+            else
+            {
+                // User closed Login form or failed login
+                break; 
+            }
         }
     }
 

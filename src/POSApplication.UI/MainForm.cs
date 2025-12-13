@@ -10,6 +10,7 @@ public partial class MainForm : Form
 {
     private readonly User _currentUser;
     private readonly IServiceProvider _serviceProvider;
+    public bool IsLogout { get; private set; } = false;
 
     public MainForm(IServiceProvider serviceProvider, User currentUser)
     {
@@ -30,6 +31,19 @@ public partial class MainForm : Form
     private void exitToolStripMenuItem_Click(object sender, EventArgs e)
     {
         Application.Exit();
+    }
+
+    private void changePasswordToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var userService = _serviceProvider.GetRequiredService<IUserService>();
+        var dialog = new ChangePasswordDialog(userService, _currentUser.UserID);
+        dialog.ShowDialog();
+    }
+
+    private void logoutToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        IsLogout = true;
+        this.Close();
     }
 
     private void salesToolStripMenuItem_Click(object sender, EventArgs e)

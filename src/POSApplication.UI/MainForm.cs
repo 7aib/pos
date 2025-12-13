@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using POSApplication.Core.Interfaces;
 using POSApplication.Infrastructure.Interfaces;
 using POSApplication.Core.Entities;
+using POSApplication.Data.Interfaces;
 using POSApplication.UI.Forms;
 
 namespace POSApplication.UI;
@@ -54,13 +55,17 @@ public partial class MainForm : Form
         var paymentService = _serviceProvider.GetRequiredService<IPaymentService>();
         var printerService = _serviceProvider.GetRequiredService<IPrinterService>();
         var inventoryService = _serviceProvider.GetRequiredService<IInventoryService>();
+        var creditService = _serviceProvider.GetRequiredService<ICreditService>();
+        var customerRepository = _serviceProvider.GetRequiredService<ICustomerRepository>();
 
         var checkoutForm = new POSCheckoutForm(
             productService, 
             salesService, 
-            paymentService, 
+            paymentService,
+            creditService, 
             printerService,
-            inventoryService);
+            inventoryService,
+            customerRepository);
         checkoutForm.ShowDialog();
     }
 

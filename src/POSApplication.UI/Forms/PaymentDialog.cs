@@ -1,6 +1,8 @@
 using POSApplication.Common.Enums;
 using POSApplication.Core.DTOs;
 using POSApplication.Core.Interfaces;
+using POSApplication.Core.Entities;
+using POSApplication.UI.Theme;
 
 namespace POSApplication.UI.Forms;
 
@@ -10,7 +12,9 @@ namespace POSApplication.UI.Forms;
 public partial class PaymentDialog : Form
 {
     private readonly IPaymentService _paymentService;
+    private readonly ICreditService _creditService;
     private readonly decimal _totalAmount;
+    private readonly Customer? _customer;
     private readonly List<PaymentDto> _payments = new();
 
     public List<PaymentDto> Payments => _payments;
@@ -28,10 +32,16 @@ public partial class PaymentDialog : Form
     private Button _btnComplete;
     private DataGridView _gridPayments;
 
-    public PaymentDialog(IPaymentService paymentService, decimal totalAmount)
+    public PaymentDialog(
+        IPaymentService paymentService, 
+        ICreditService creditService, 
+        decimal totalAmount, 
+        Customer? customer)
     {
         _paymentService = paymentService;
+        _creditService = creditService;
         _totalAmount = totalAmount;
+        _customer = customer;
         InitializeComponent();
         UpdateAmounts();
     }
@@ -48,9 +58,11 @@ public partial class PaymentDialog : Form
         // Amount display panel
         var panelAmounts = new Panel
         {
+
             Location = new Point(10, 10),
             Size = new Size(460, 100),
-            BorderStyle = BorderStyle.FixedSingle
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = AppTheme.PanelColor
         };
 
         _lblTotalAmount = new Label
@@ -153,9 +165,10 @@ public partial class PaymentDialog : Form
         {
             Text = "Add Payment",
             Location = new Point(150, 270),
-            Width = 120,
-            Height = 30
+            Width = 150,
+            Height = 35
         };
+        AppTheme.ApplyButtonTheme(_btnAddPayment, AppTheme.PrimaryColor);
         _btnAddPayment.Click += BtnAddPayment_Click;
 
         // Payments grid
@@ -183,21 +196,23 @@ public partial class PaymentDialog : Form
         {
             Text = "Complete Payment",
             Location = new Point(300, 460),
-            Width = 150,
-            Height = 40,
+            Width = 170,
+            Height = 45,
             DialogResult = DialogResult.OK,
             Enabled = false
         };
+        AppTheme.ApplyButtonTheme(_btnComplete, AppTheme.SuccessColor);
         _btnComplete.Click += BtnComplete_Click;
 
         var btnCancel = new Button
         {
             Text = "Cancel",
-            Location = new Point(140, 460),
+            Location = new Point(130, 460),
             Width = 150,
-            Height = 40,
+            Height = 45,
             DialogResult = DialogResult.Cancel
         };
+        AppTheme.ApplySecondaryButtonTheme(btnCancel);
 
         // Add controls
         this.Controls.AddRange(new Control[]
@@ -261,6 +276,41 @@ public partial class PaymentDialog : Form
             {
                 MessageBox.Show("Payment validation failed. Please check card details.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
+            }
+
+            // Credit Account specific validation
+            if (paymentMethod == PaymentMethod.CreditAccount)
+            {
+                if (_customer == null)
+                {
+                    MessageBox.Show("Walk-in customers cannot pay with Credit Account.\nPlease select a customer first.", "Customer Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                try 
+                {
+                    // Get latest balance
+                    var balance = await _creditService.GetCustomerBalanceAsync(_customer.CustomerID);
+                    var creditAccount = await _creditService.GetCreditAccountAsync(_customer.CustomerID);
+                    var creditLimit = creditAccount?.CreditLimit ?? 0;
+
+                    if (creditAccount == null || !creditAccount.IsActive)
+                    {
+                         MessageBox.Show("Customer does not have an active credit account.", "Credit Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                         return;
+                    }
+
+                    if (balance + amount > creditLimit)
+                    {
+                         MessageBox.Show($"Credit limit exceeded.\nLimit: {creditLimit:C2}\nCurrent Balance: {balance:C2}\nAttempted: {amount:C2}", "Credit Limit Exceeded", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                         return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error validating credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
             }
 
             _payments.Add(payment);

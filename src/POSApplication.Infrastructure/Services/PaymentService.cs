@@ -29,7 +29,9 @@ public class PaymentService : IPaymentService
                 break;
 
             case PaymentMethod.CreditAccount:
-                // TODO: Add credit limit validation
+                // Credit limit validation is handled in the UI (PaymentDialog) 
+                // and strictly enforced in CreditService.ProcessCreditPaymentAsync.
+                // PaymentService just acknowledges the method is valid.
                 break;
         }
 

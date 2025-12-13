@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<ICreditService, CreditService>();
 
         // Forms
         services.AddTransient<LoginForm>();

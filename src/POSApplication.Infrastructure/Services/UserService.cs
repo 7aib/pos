@@ -62,6 +62,8 @@ public class UserService : IUserService
         existing.FullName = user.FullName;
         existing.Role = user.Role;
         existing.IsActive = user.IsActive;
+        existing.Email = user.Email;
+        existing.Phone = user.Phone;
         // Password is updated separately
         
         await _context.SaveChangesAsync();

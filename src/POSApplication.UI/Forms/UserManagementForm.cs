@@ -71,6 +71,43 @@ public partial class UserManagementForm : Form
         }
     }
 
+    private async void btnEditUser_Click(object sender, EventArgs e)
+    {
+        if (dgvUsers.SelectedRows.Count > 0)
+        {
+            var userId = (int)dgvUsers.SelectedRows[0].Cells["UserID"].Value;
+            var user = await _userService.GetUserByIdAsync(userId);
+            
+            if (user == null)
+            {
+                 MessageBox.Show("User not found.");
+                 return;
+            }
+
+            // Must run on UI thread, assuming we are on it.
+            using (var dlg = new UserEditDialog(user))
+            {
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                         await _userService.UpdateUserAsync(dlg.User);
+                         await LoadUsersAsync();
+                         MessageBox.Show("User updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error updating user: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+        else
+        {
+            MessageBox.Show("Please select a user to edit.", "Selection Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
     private async void btnDeleteUser_Click(object sender, EventArgs e)
     {
         if (dgvUsers.SelectedRows.Count > 0)

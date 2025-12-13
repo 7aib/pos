@@ -1,8 +1,11 @@
 using POSApplication.Common.Enums;
 using POSApplication.Core.DTOs;
+using POSApplication.Core.Entities;
 using POSApplication.Core.Interfaces;
 using POSApplication.Infrastructure.Interfaces;
+using POSApplication.Data.Interfaces;
 using POSApplication.UI.Services;
+using POSApplication.UI.Theme;
 
 namespace POSApplication.UI.Forms;
 
@@ -14,9 +17,16 @@ public partial class POSCheckoutForm : Form
     private readonly IProductService _productService;
     private readonly ISalesService _salesService;
     private readonly IPaymentService _paymentService;
+    private readonly ICreditService _creditService;
     private readonly IPrinterService _printerService;
     private readonly IInventoryService _inventoryService;
+    private readonly ICustomerRepository _customerRepository;
     private readonly CartManager _cartManager;
+
+    private Customer? _selectedCustomer;
+    private Label _lblCustomerName;
+    private Button _btnSelectCustomer;
+    private Button _btnPayBalance;
 
     private TextBox _txtSearch;
     private TextBox _txtBarcode;
@@ -35,14 +45,18 @@ public partial class POSCheckoutForm : Form
         IProductService productService,
         ISalesService salesService,
         IPaymentService paymentService,
+        ICreditService creditService,
         IPrinterService printerService,
-        IInventoryService inventoryService)
+        IInventoryService inventoryService,
+        ICustomerRepository customerRepository)
     {
         _productService = productService;
         _salesService = salesService;
         _paymentService = paymentService;
+        _creditService = creditService;
         _printerService = printerService;
         _inventoryService = inventoryService;
+        _customerRepository = customerRepository;
         _cartManager = new CartManager();
         _cartManager.CartChanged += CartManager_CartChanged;
 
@@ -60,7 +74,8 @@ public partial class POSCheckoutForm : Form
         {
             Dock = DockStyle.Left,
             Width = 500,
-            Padding = new Padding(10)
+            Padding = new Padding(15),
+            BackColor = AppTheme.PanelColor
         };
 
         var lblSearch = new Label
@@ -140,9 +155,10 @@ public partial class POSCheckoutForm : Form
         {
             Text = "Add to Cart",
             Location = new Point(220, 465),
-            Width = 120,
+            Width = 140,
             Height = 35
         };
+        AppTheme.ApplyButtonTheme(_btnAddToCart, AppTheme.PrimaryColor);
         _btnAddToCart.Click += BtnAddToCart_Click;
 
         panelLeft.Controls.AddRange(new Control[]
@@ -157,7 +173,8 @@ public partial class POSCheckoutForm : Form
         var panelRight = new Panel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(10)
+            Padding = new Padding(15),
+            BackColor = AppTheme.BackgroundColor
         };
 
         var lblCart = new Label
@@ -165,24 +182,59 @@ public partial class POSCheckoutForm : Form
             Text = "Shopping Cart:",
             Location = new Point(10, 10),
             Width = 150,
-            Font = new Font("Segoe UI", 12, FontStyle.Bold)
+            Font = AppTheme.SubHeaderFont,
+            ForeColor = AppTheme.TextColor
         };
+
+        // Customer Selection Controls
+        _lblCustomerName = new Label 
+        { 
+            Text = "Customer: Walk-in", 
+            Location = new Point(170, 10), 
+            Width = 300, 
+            Font = new Font("Segoe UI", 10),
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
+        _btnSelectCustomer = new Button 
+        { 
+            Text = "Select Customer", 
+            Location = new Point(480, 5), 
+            Width = 140, 
+            Height = 35 
+        };
+        AppTheme.ApplySecondaryButtonTheme(_btnSelectCustomer);
+        _btnSelectCustomer.Click += BtnSelectCustomer_Click;
+
+        _btnPayBalance = new Button 
+        { 
+            Text = "Pay Balance", 
+            Location = new Point(630, 5), 
+            Width = 120, 
+            Height = 35,
+            Enabled = false
+        };
+        AppTheme.ApplySecondaryButtonTheme(_btnPayBalance); // Default styling
+        _btnPayBalance.Click += BtnPayBalance_Click;
 
         _gridCart = new DataGridView
         {
-            Location = new Point(10, 40),
-            Size = new Size(650, 400),
+            Location = new Point(10, 50),
+            Size = new Size(700, 400),
             AutoGenerateColumns = false,
             AllowUserToAddRows = false,
             AllowUserToDeleteRows = false,
             ReadOnly = true,
             SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            RowHeadersVisible = false
+            RowHeadersVisible = false,
+            BackgroundColor = Color.White,
+            BorderStyle = BorderStyle.None
         };
+        // TODO: Apply grid styling helper if available
 
         _gridCart.Columns.AddRange(new DataGridViewColumn[]
         {
-            new DataGridViewTextBoxColumn { HeaderText = "Product", DataPropertyName = "ProductName", Width = 200 },
+            new DataGridViewTextBoxColumn { HeaderText = "Product", DataPropertyName = "ProductName", Width = 220 },
             new DataGridViewTextBoxColumn { HeaderText = "SKU", DataPropertyName = "SKU", Width = 100 },
             new DataGridViewTextBoxColumn { HeaderText = "Qty", DataPropertyName = "Quantity", Width = 60 },
             new DataGridViewTextBoxColumn { HeaderText = "Unit Price", DataPropertyName = "UnitPrice", Width = 90, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } },
@@ -193,54 +245,59 @@ public partial class POSCheckoutForm : Form
         var btnRemoveItem = new Button
         {
             Text = "Remove Item",
-            Location = new Point(10, 450),
-            Width = 120,
+            Location = new Point(10, 460),
+            Width = 140,
             Height = 35
         };
+        AppTheme.ApplySecondaryButtonTheme(btnRemoveItem);
+        btnRemoveItem.BackColor = Color.WhiteSmoke;
         btnRemoveItem.Click += BtnRemoveItem_Click;
 
         _btnClearCart = new Button
         {
             Text = "Clear Cart",
-            Location = new Point(140, 450),
-            Width = 120,
+            Location = new Point(160, 460),
+            Width = 140,
             Height = 35
         };
+        AppTheme.ApplySecondaryButtonTheme(_btnClearCart);
+        _btnClearCart.ForeColor = AppTheme.DangerColor;
         _btnClearCart.Click += BtnClearCart_Click;
 
         // Totals panel
         var panelTotals = new Panel
         {
-            Location = new Point(10, 500),
-            Size = new Size(650, 120),
-            BorderStyle = BorderStyle.FixedSingle
+            Location = new Point(10, 510),
+            Size = new Size(700, 130),
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = AppTheme.PanelColor
         };
 
         _lblSubtotal = new Label
         {
             Text = "Subtotal: $0.00",
-            Location = new Point(420, 10),
-            Width = 200,
-            Font = new Font("Segoe UI", 11),
+            Location = new Point(450, 10),
+            Width = 240,
+            Font = AppTheme.SubHeaderFont,
             TextAlign = ContentAlignment.MiddleRight
         };
 
         _lblTax = new Label
         {
             Text = "Tax: $0.00",
-            Location = new Point(420, 40),
-            Width = 200,
-            Font = new Font("Segoe UI", 11),
+            Location = new Point(450, 40),
+            Width = 240,
+            Font = AppTheme.SubHeaderFont,
             TextAlign = ContentAlignment.MiddleRight
         };
 
         _lblTotal = new Label
         {
             Text = "TOTAL: $0.00",
-            Location = new Point(420, 70),
-            Width = 200,
-            Font = new Font("Segoe UI", 14, FontStyle.Bold),
-            ForeColor = Color.DarkGreen,
+            Location = new Point(450, 75),
+            Width = 240,
+            Font = AppTheme.LargeFont,
+            ForeColor = AppTheme.SuccessColor,
             TextAlign = ContentAlignment.MiddleRight
         };
 
@@ -248,19 +305,17 @@ public partial class POSCheckoutForm : Form
 
         _btnCompleteSale = new Button
         {
-            Text = "Complete Sale (F12)",
-            Location = new Point(480, 630),
-            Width = 180,
-            Height = 50,
-            Font = new Font("Segoe UI", 12, FontStyle.Bold),
-            BackColor = Color.Green,
-            ForeColor = Color.White
+            Text = "COMPLETE SALE (F12)",
+            Location = new Point(510, 650),
+            Width = 200,
+            Height = 55
         };
+        AppTheme.ApplyButtonTheme(_btnCompleteSale, AppTheme.SuccessColor);
         _btnCompleteSale.Click += BtnCompleteSale_Click;
 
         panelRight.Controls.AddRange(new Control[]
         {
-            lblCart, _gridCart,
+            lblCart, _lblCustomerName, _btnSelectCustomer, _btnPayBalance, _gridCart,
             btnRemoveItem, _btnClearCart,
             panelTotals, _btnCompleteSale
         });
@@ -299,6 +354,56 @@ public partial class POSCheckoutForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Error searching products: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+
+
+    private void BtnSelectCustomer_Click(object? sender, EventArgs e)
+    {
+        using (var dlg = new CustomerSelectionDialog(_customerRepository))
+        {
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                _selectedCustomer = dlg.SelectedCustomer;
+                _lblCustomerName.Text = _selectedCustomer != null 
+                    ? $"Customer: {_selectedCustomer.FirstName} {_selectedCustomer.LastName}"
+                    : "Customer: Walk-in";
+                    
+                if (_selectedCustomer?.CreditAccount != null)
+                {
+                     _lblCustomerName.Text += $" (Credit: {_selectedCustomer.CreditAccount.CurrentBalance:C2} / {_selectedCustomer.CreditAccount.CreditLimit:C2})";
+                }
+                
+                _btnPayBalance.Enabled = _selectedCustomer != null;
+            }
+        }
+    }
+
+
+
+    private async void BtnPayBalance_Click(object? sender, EventArgs e)
+    {
+        if (_selectedCustomer == null) return;
+
+        using (var dlg = new CustomerPaymentForm(_creditService, _selectedCustomer, 1)) // TODO: UserID
+        {
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                // Refresh customer balance display
+                 var balance = await _creditService.GetCustomerBalanceAsync(_selectedCustomer.CustomerID);
+                 // Need to refresh CreditAccount object if used elsewhere, but for label we can just update text
+                 if (_selectedCustomer.CreditAccount != null) _selectedCustomer.CreditAccount.CurrentBalance = balance;
+                 
+                  _lblCustomerName.Text = $"Customer: {_selectedCustomer.FirstName} {_selectedCustomer.LastName}";
+                 
+                 // Fetch latest limit?
+                 var account = await _creditService.GetCreditAccountAsync(_selectedCustomer.CustomerID);
+                 if (account != null)
+                 {
+                     _lblCustomerName.Text += $" (Credit: {account.CurrentBalance:C2} / {account.CreditLimit:C2})";
+                 }
+            }
         }
     }
 
@@ -395,7 +500,7 @@ public partial class POSCheckoutForm : Form
             var (subtotal, tax, total) = _cartManager.CalculateTotals();
 
             // Open payment dialog
-            var paymentDialog = new PaymentDialog(_paymentService, total);
+            var paymentDialog = new PaymentDialog(_paymentService, _creditService, total, _selectedCustomer);
             if (paymentDialog.ShowDialog() != DialogResult.OK)
             {
                 return;
@@ -404,7 +509,7 @@ public partial class POSCheckoutForm : Form
             // Create sale DTO
             var saleDto = new SaleDto
             {
-                CustomerID = null, // Walk-in customer
+                CustomerID = _selectedCustomer?.CustomerID, 
                 CashierID = 1, // TODO: Get from logged-in user
                 Subtotal = subtotal,
                 TaxAmount = tax,
@@ -427,6 +532,19 @@ public partial class POSCheckoutForm : Form
 
             // Process sale
             var completedSale = await _salesService.CreateSaleAsync(saleDto);
+
+            // Process Credit Account payments if any
+            foreach (var payment in completedSale.Payments)
+            {
+                if (payment.PaymentMethod == PaymentMethod.CreditAccount && completedSale.CustomerID.HasValue)
+                {
+                   await _creditService.ProcessCreditPaymentAsync(
+                       completedSale.CustomerID.Value, 
+                       payment.Amount, 
+                       completedSale.SaleID, 
+                       completedSale.CashierID); 
+                }
+            }
 
             // Print receipt
             await _printerService.PrintReceiptAsync(completedSale);

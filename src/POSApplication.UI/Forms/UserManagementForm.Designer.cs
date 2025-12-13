@@ -17,6 +17,7 @@ namespace POSApplication.UI.Forms
         {
             this.dgvUsers = new System.Windows.Forms.DataGridView();
             this.btnAddUser = new System.Windows.Forms.Button();
+            this.btnEditUser = new System.Windows.Forms.Button();
             this.btnDeleteUser = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
@@ -64,6 +65,19 @@ namespace POSApplication.UI.Forms
             this.btnDeleteUser.UseVisualStyleBackColor = false;
             this.btnDeleteUser.Click += new System.EventHandler(this.btnDeleteUser_Click);
             // 
+            // btnEditUser
+            // 
+            this.btnEditUser.BackColor = System.Drawing.Color.Goldenrod;
+            this.btnEditUser.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditUser.ForeColor = System.Drawing.Color.White;
+            this.btnEditUser.Location = new System.Drawing.Point(264, 400);
+            this.btnEditUser.Name = "btnEditUser";
+            this.btnEditUser.Size = new System.Drawing.Size(120, 35);
+            this.btnEditUser.TabIndex = 4;
+            this.btnEditUser.Text = "Edit User";
+            this.btnEditUser.UseVisualStyleBackColor = false;
+            this.btnEditUser.Click += new System.EventHandler(this.btnEditUser_Click);
+            // 
             // btnClose
             // 
             this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -105,6 +119,7 @@ namespace POSApplication.UI.Forms
             this.Controls.Add(this.btnClose);
             this.Controls.Add(this.btnDeleteUser);
             this.Controls.Add(this.btnAddUser);
+            this.Controls.Add(this.btnEditUser);
             this.Controls.Add(this.dgvUsers);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -122,6 +137,7 @@ namespace POSApplication.UI.Forms
 
         private System.Windows.Forms.DataGridView dgvUsers;
         private System.Windows.Forms.Button btnAddUser;
+        private System.Windows.Forms.Button btnEditUser;
         private System.Windows.Forms.Button btnDeleteUser;
         private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.Panel panel1;

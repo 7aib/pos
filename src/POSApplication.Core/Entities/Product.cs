@@ -1,4 +1,4 @@
-namespace POSApplication.Data.Entities;
+namespace POSApplication.Core.Entities;
 
 public class Product
 {

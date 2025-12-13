@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using POSApplication.Data.Entities;
+using POSApplication.Core.Entities;
 
 namespace POSApplication.Data.Context;
 
@@ -241,5 +241,8 @@ public class POSDbContext : DbContext
                 .HasForeignKey(e => e.AdjustedBy)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // Seed Default Admin User - Moved to SeedData.cs
+        // modelBuilder.Entity<User>().HasData(...)
     }
 }

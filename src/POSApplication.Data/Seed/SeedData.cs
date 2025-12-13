@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using POSApplication.Common.Enums;
 using POSApplication.Data.Context;
-using POSApplication.Data.Entities;
+using POSApplication.Core.Entities;
 
 namespace POSApplication.Data.Seed;
 

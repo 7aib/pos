@@ -3,11 +3,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using POSApplication.Core.Interfaces;
 using POSApplication.Data.Context;
-using POSApplication.Data.Entities;
+using POSApplication.Core.Entities;
 using POSApplication.Data.Interfaces;
 using POSApplication.Data.Repositories;
 using POSApplication.Infrastructure.Interfaces;
 using POSApplication.Infrastructure.Services;
+using POSApplication.UI.Forms;
 
 namespace POSApplication.UI.Configuration;
 
@@ -45,6 +46,12 @@ public static class DependencyInjection
         services.AddScoped<ISalesService, SalesService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IReportingService, ReportingService>();
+
+        // Forms
+        services.AddTransient<LoginForm>();
+        services.AddTransient<MainForm>();
 
         // Infrastructure Services
         services.AddSingleton<IPrinterService, ThermalPrinterService>();

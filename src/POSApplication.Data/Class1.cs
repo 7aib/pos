@@ -1,4 +1,4 @@
-﻿namespace POSApplication.Data;
+namespace POSApplication.Data;
 
 public class Class1
 {

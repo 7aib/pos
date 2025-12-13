@@ -1,6 +1,6 @@
 using POSApplication.Core.DTOs;
 using POSApplication.Core.Interfaces;
-using POSApplication.Data.Entities;
+using POSApplication.Core.Entities;
 using POSApplication.Data.Interfaces;
 
 namespace POSApplication.Infrastructure.Services;

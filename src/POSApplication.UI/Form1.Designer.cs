@@ -1,4 +1,4 @@
-﻿namespace POSApplication.UI;
+namespace POSApplication.UI;
 
 partial class Form1
 {

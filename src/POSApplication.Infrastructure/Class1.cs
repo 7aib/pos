@@ -1,4 +1,4 @@
-﻿namespace POSApplication.Infrastructure;
+namespace POSApplication.Infrastructure;
 
 public class Class1
 {

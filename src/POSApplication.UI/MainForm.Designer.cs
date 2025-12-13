@@ -35,7 +35,9 @@ namespace POSApplication.UI
             inventoryToolStripMenuItem = new ToolStripMenuItem();
             productsToolStripMenuItem = new ToolStripMenuItem();
             reportsToolStripMenuItem = new ToolStripMenuItem();
+            reportsToolStripMenuItem = new ToolStripMenuItem();
             settingsToolStripMenuItem = new ToolStripMenuItem();
+            manageUsersToolStripMenuItem = new ToolStripMenuItem();
             statusStrip1 = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             toolStripStatusUser = new ToolStripStatusLabel();
@@ -92,13 +94,24 @@ namespace POSApplication.UI
             // 
             reportsToolStripMenuItem.Name = "reportsToolStripMenuItem";
             reportsToolStripMenuItem.Size = new Size(59, 20);
+            reportsToolStripMenuItem.Name = "reportsToolStripMenuItem";
+            reportsToolStripMenuItem.Size = new Size(59, 20);
             reportsToolStripMenuItem.Text = "Reports";
+            reportsToolStripMenuItem.Click += reportsToolStripMenuItem_Click;
             // 
             // settingsToolStripMenuItem
             // 
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { manageUsersToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new Size(61, 20);
             settingsToolStripMenuItem.Text = "Settings";
+            // 
+            // manageUsersToolStripMenuItem
+            // 
+            manageUsersToolStripMenuItem.Name = "manageUsersToolStripMenuItem";
+            manageUsersToolStripMenuItem.Size = new Size(180, 22);
+            manageUsersToolStripMenuItem.Text = "Manage Users";
+            manageUsersToolStripMenuItem.Click += manageUsersToolStripMenuItem_Click;
             // 
             // statusStrip1
             // 
@@ -164,6 +177,7 @@ namespace POSApplication.UI
         private ToolStripMenuItem productsToolStripMenuItem;
         private ToolStripMenuItem reportsToolStripMenuItem;
         private ToolStripMenuItem settingsToolStripMenuItem;
+        private ToolStripMenuItem manageUsersToolStripMenuItem;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel toolStripStatusUser;

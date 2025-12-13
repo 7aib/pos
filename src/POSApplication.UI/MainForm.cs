@@ -1,19 +1,30 @@
 using Microsoft.Extensions.DependencyInjection;
 using POSApplication.Core.Interfaces;
 using POSApplication.Infrastructure.Interfaces;
+using POSApplication.Core.Entities;
 using POSApplication.UI.Forms;
 
 namespace POSApplication.UI;
 
 public partial class MainForm : Form
 {
+    private readonly User _currentUser;
     private readonly IServiceProvider _serviceProvider;
 
-    public MainForm(IServiceProvider serviceProvider)
+    public MainForm(IServiceProvider serviceProvider, User currentUser)
     {
         _serviceProvider = serviceProvider;
+        _currentUser = currentUser;
         InitializeComponent();
-        this.Text = "POS Application - Phase 2";
+        this.Text = "POS Application - Phase 3";
+        
+        toolStripStatusUser.Text = $"User: {_currentUser.FullName} ({_currentUser.Role})";
+        
+        // Apply permissions
+        if (_currentUser.Role != POSApplication.Common.Enums.UserRole.Admin)
+        {
+            settingsToolStripMenuItem.Visible = false;
+        }
     }
 
     private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -45,5 +56,19 @@ public partial class MainForm : Form
         var productService = _serviceProvider.GetRequiredService<IProductService>();
         var productManagementForm = new ProductManagementForm(productService);
         productManagementForm.ShowDialog();
+    }
+
+    private void reportsToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var reportingService = _serviceProvider.GetRequiredService<IReportingService>();
+        var reportsForm = new ReportsForm(reportingService);
+        reportsForm.ShowDialog();
+    }
+
+    private void manageUsersToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var userService = _serviceProvider.GetRequiredService<IUserService>();
+        var userForm = new UserManagementForm(userService);
+        userForm.ShowDialog();
     }
 }

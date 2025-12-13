@@ -1,4 +1,4 @@
-﻿namespace POSApplication.Core;
+namespace POSApplication.Core;
 
 public class Class1
 {

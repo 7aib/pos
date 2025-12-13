@@ -1,4 +1,4 @@
-using POSApplication.Data.Entities;
+using POSApplication.Core.Entities;
 
 namespace POSApplication.Data.Interfaces;
 

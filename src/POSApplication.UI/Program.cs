@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using POSApplication.Data.Context;
 using POSApplication.Data.Seed;
 using POSApplication.UI.Configuration;
+using POSApplication.UI.Forms;
 
 namespace POSApplication.UI;
 
@@ -25,8 +26,24 @@ static class Program
         // Initialize database and seed data
         InitializeDatabase();
 
-        // Run the application
-        Application.Run(new MainForm(ServiceProvider));
+        // Resolve LoginForm
+        var loginForm = ServiceProvider.GetRequiredService<LoginForm>();
+
+        if (loginForm.ShowDialog() == DialogResult.OK && loginForm.AuthenticatedUser != null)
+        {
+            // Run the main application
+            // Note: We're resolving MainForm from DI now to support injection
+            // We need to pass the user, so we can't use DI to resolve MainForm directly if it requires User in constructor
+            // unless we register User as a scoped service, which is a bit tricky with Transient Forms.
+            // Simpler to just manually instantiate MainForm here.
+            
+            var mainForm = new MainForm(ServiceProvider, loginForm.AuthenticatedUser);
+            Application.Run(mainForm); 
+        }
+        else
+        {
+            Application.Exit();
+        }
     }
 
     private static void InitializeDatabase()

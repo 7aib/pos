@@ -1,8 +1,11 @@
 using POSApplication.Common.Enums;
 
-namespace POSApplication.Data.Entities;
+namespace POSApplication.Core.DTOs;
 
-public class Payment
+/// <summary>
+/// Payment Data Transfer Object
+/// </summary>
+public class PaymentDto
 {
     public int PaymentID { get; set; }
     public int SaleID { get; set; }
@@ -10,11 +13,7 @@ public class Payment
     public decimal Amount { get; set; }
     public string? CardType { get; set; }
     public string? CardLastFourDigits { get; set; }
-    public string? TransactionReference {get; set; }
-    public DateTime PaymentDate { get; set; } = DateTime.Now;
+    public string? TransactionReference { get; set; }
+    public DateTime PaymentDate { get; set; }
     public int? ProcessedBy { get; set; }
-    
-    // Navigation properties
-    public Sale Sale { get; set; } = null!;
-    public User? ProcessedByUser { get; set; }
 }

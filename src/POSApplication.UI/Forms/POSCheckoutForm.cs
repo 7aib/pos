@@ -477,4 +477,27 @@ public partial class POSCheckoutForm : Form
             BtnCompleteSale_Click(sender, e);
         }
     }
+
+    protected override void OnKeyPress(KeyPressEventArgs e)
+    {
+        base.OnKeyPress(e);
+
+        // If the focused control is NOT one of our input fields, redirect to barcode scanner
+        if (!(_txtSearch.Focused || _numQuantity.Focused || _txtBarcode.Focused))
+        {
+            // If it's a valid character, append to barcode field and focus it
+            if (!char.IsControl(e.KeyChar))
+            {
+                _txtBarcode.Focus();
+                _txtBarcode.AppendText(e.KeyChar.ToString());
+                e.Handled = true;
+            }
+        }
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        _txtBarcode.Focus();
+    }
 }

@@ -10,6 +10,7 @@ public class CustomerEditDialog : Form
 {
     private readonly ICustomerService _customerService;
     private CustomerDto? _currentCustomer;
+    private ErrorProvider _errorProvider;
 
     private TextBox _txtFirstName;
     private TextBox _txtLastName;
@@ -53,6 +54,9 @@ public class CustomerEditDialog : Form
         this.MinimizeBox = false;
         this.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
+        _errorProvider = new ErrorProvider(this);
+        _errorProvider.BlinkStyle = ErrorBlinkStyle.NeverBlink;
+
         var mainPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -72,15 +76,18 @@ public class CustomerEditDialog : Form
         }
 
         _txtFirstName = new TextBox();
+        _txtFirstName.Validating += TxtFirstName_Validating;
         AddRow("First Name *:", _txtFirstName, 0);
 
         _txtLastName = new TextBox();
         AddRow("Last Name:", _txtLastName, 1);
 
         _txtPhone = new TextBox();
+        _txtPhone.Validating += TxtPhone_Validating;
         AddRow("Phone:", _txtPhone, 2);
 
         _txtEmail = new TextBox();
+        _txtEmail.Validating += TxtEmail_Validating;
         AddRow("Email:", _txtEmail, 3);
 
         _txtAddress = new TextBox();
@@ -123,11 +130,14 @@ public class CustomerEditDialog : Form
 
     private async void BtnSave_Click(object? sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_txtFirstName.Text))
+        if (!ValidateChildren(ValidationConstraints.Enabled))
         {
-            MessageBox.Show("First Name is required.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Please correct the errors before saving.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
+
+        // Manual check for specific complex validations if not covered by Validating events
+        // But we will add Validating events next.
 
         try
         {
@@ -159,6 +169,63 @@ public class CustomerEditDialog : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Error saving customer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void TxtFirstName_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_txtFirstName.Text))
+        {
+            e.Cancel = true;
+            _errorProvider.SetError(_txtFirstName, "First Name is required.");
+        }
+        else
+        {
+            e.Cancel = false;
+            _errorProvider.SetError(_txtFirstName, "");
+        }
+    }
+
+    private void TxtEmail_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_txtEmail.Text))
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(_txtEmail.Text);
+                if (addr.Address != _txtEmail.Text) throw new Exception();
+                _errorProvider.SetError(_txtEmail, "");
+            }
+            catch
+            {
+                e.Cancel = true;
+                _errorProvider.SetError(_txtEmail, "Invalid email format.");
+            }
+        }
+        else
+        {
+            _errorProvider.SetError(_txtEmail, "");
+        }
+    }
+
+    private void TxtPhone_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+         if (!string.IsNullOrWhiteSpace(_txtPhone.Text))
+        {
+            var digitCount = _txtPhone.Text.Count(char.IsDigit);
+            if (digitCount < 11)
+            {
+                e.Cancel = true;
+                _errorProvider.SetError(_txtPhone, "Phone must have at least 11 digits.");
+            }
+            else
+            {
+                _errorProvider.SetError(_txtPhone, "");
+            }
+        }
+        else
+        {
+            _errorProvider.SetError(_txtPhone, "");
         }
     }
 }

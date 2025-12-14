@@ -34,6 +34,13 @@ public class CustomerService : ICustomerService
         return customer != null ? MapToDto(customer) : null;
     }
 
+    public async Task<CustomerDto?> GetCustomerByEmailAsync(string email)
+    {
+        var allCustomers = await _customerRepository.GetAllAsync();
+        var customer = allCustomers.FirstOrDefault(c => c.Email?.Equals(email, StringComparison.OrdinalIgnoreCase) == true);
+        return customer != null ? MapToDto(customer) : null;
+    }
+
     public async Task<IEnumerable<CustomerDto>> SearchCustomersAsync(string searchTerm)
     {
         var customers = await _customerRepository.SearchCustomersAsync(searchTerm);
@@ -52,6 +59,14 @@ public class CustomerService : ICustomerService
             var existing = await GetCustomerByPhoneAsync(customerDto.Phone);
             if (existing != null)
                 throw new InvalidOperationException($"Customer with phone '{customerDto.Phone}' already exists");
+        }
+
+        // Email uniqueness check
+        if (!string.IsNullOrWhiteSpace(customerDto.Email))
+        {
+            var existing = await GetCustomerByEmailAsync(customerDto.Email);
+            if (existing != null)
+                throw new InvalidOperationException($"Customer with email '{customerDto.Email}' already exists");
         }
 
         var customer = MapToEntity(customerDto);
@@ -91,6 +106,14 @@ public class CustomerService : ICustomerService
                 throw new InvalidOperationException($"Customer with phone '{customerDto.Phone}' already exists");
         }
 
+        // Email uniqueness check (excluding current customer)
+        if (!string.IsNullOrWhiteSpace(customerDto.Email) && !string.Equals(existingCustomer.Email, customerDto.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = await GetCustomerByEmailAsync(customerDto.Email);
+            if (existing != null)
+                throw new InvalidOperationException($"Customer with email '{customerDto.Email}' already exists");
+        }
+
         // Update fields
         existingCustomer.FirstName = customerDto.FirstName;
         existingCustomer.LastName = customerDto.LastName;
@@ -113,9 +136,19 @@ public class CustomerService : ICustomerService
 
     public async Task<bool> DeleteCustomerAsync(int id)
     {
-        var customer = await _customerRepository.GetByIdAsync(id);
+        // We need to load credit account to check for outstanding balance
+        // The repository should support this, or we rely on navigation property if lazy loading enabled (which it usually isn't in modern EF Core defaults)
+        // I will assume GetCustomerWithCreditAccountAsync is available on repository or I need to cast/access it.
+        // Looking at previous interactions, `_customerRepository.GetCustomerWithCreditAccountAsync(id)` exists.
+        
+        var customer = await _customerRepository.GetCustomerWithCreditAccountAsync(id);
         if (customer == null)
             return false;
+
+        if (customer.CreditAccount != null && customer.CreditAccount.CurrentBalance > 0)
+        {
+            throw new InvalidOperationException($"Cannot delete customer '{customer.FirstName} {customer.LastName}' because they have an outstanding credit balance of {customer.CreditAccount.CurrentBalance:C}.");
+        }
 
         // Soft delete
         customer.IsActive = false;

@@ -26,6 +26,10 @@ public partial class MainForm : Form
         if (_currentUser.Role != POSApplication.Common.Enums.UserRole.Admin)
         {
             settingsToolStripMenuItem.Visible = false;
+            manageUsersToolStripMenuItem.Visible = false;
+            // "Cashier can only add new customers" implies they shouldn't access full management
+            // So we hide the top-level Customers menu which allows full CRUD
+            customersToolStripMenuItem.Visible = false; 
         }
     }
 
@@ -66,7 +70,8 @@ public partial class MainForm : Form
             printerService,
             inventoryService,
             customerRepository,
-            _serviceProvider);
+            _serviceProvider,
+            _currentUser);
         checkoutForm.ShowDialog();
     }
 

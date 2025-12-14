@@ -58,6 +58,16 @@ public class CustomerService : ICustomerService
         customer.CreatedAt = DateTime.Now;
         customer.UpdatedAt = DateTime.Now;
 
+        // Auto-create credit account for every new customer
+        customer.CreditAccount = new CreditAccount
+        {
+            CreditLimit = customer.CreditLimit, // Use limit from DTO (set in UI)
+            CurrentBalance = 0,
+            IsActive = true,
+            CreatedAt = DateTime.Now,
+            PaymentTermDays = 30
+        };
+
         await _customerRepository.AddAsync(customer);
         await _customerRepository.SaveChangesAsync();
 

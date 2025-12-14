@@ -23,6 +23,7 @@ public partial class POSCheckoutForm : Form
     private readonly ICustomerRepository _customerRepository;
     private readonly CartManager _cartManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly User _currentUser;
 
     private Customer? _selectedCustomer;
     private Label _lblCustomerName;
@@ -50,7 +51,8 @@ public partial class POSCheckoutForm : Form
         IPrinterService printerService,
         IInventoryService inventoryService,
         ICustomerRepository customerRepository,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        User currentUser)
     {
         _productService = productService;
         _salesService = salesService;
@@ -60,6 +62,7 @@ public partial class POSCheckoutForm : Form
         _inventoryService = inventoryService;
         _customerRepository = customerRepository;
         _serviceProvider = serviceProvider;
+        _currentUser = currentUser;
         _cartManager = new CartManager();
         _cartManager.CartChanged += CartManager_CartChanged;
 
@@ -69,7 +72,7 @@ public partial class POSCheckoutForm : Form
     private void InitializeComponent()
     {
         this.Text = "POS Checkout";
-        this.Size = new Size(1300, 800);
+        this.Size = new Size(1300, 900);
         this.StartPosition = FormStartPosition.CenterScreen;
 
         // ===== LEFT PANEL: Product Search =====
@@ -362,13 +365,23 @@ public partial class POSCheckoutForm : Form
 
 
 
-    private void BtnSelectCustomer_Click(object? sender, EventArgs e)
+    private async void BtnSelectCustomer_Click(object? sender, EventArgs e)
     {
-        using (var dlg = new CustomerSelectionDialog(_customerRepository, _serviceProvider))
+        using (var dlg = new CustomerSelectionDialog(_customerRepository, _serviceProvider, _currentUser))
         {
             if (dlg.ShowDialog() == DialogResult.OK)
             {
-                _selectedCustomer = dlg.SelectedCustomer;
+                if (dlg.SelectedCustomer != null)
+                {
+                    // Reload full customer details including CreditAccount
+                    // Search results might not include navigation properties
+                    _selectedCustomer = await _customerRepository.GetCustomerWithCreditAccountAsync(dlg.SelectedCustomer.CustomerID);
+                }
+                else
+                {
+                    _selectedCustomer = null;
+                }
+
                 if (_selectedCustomer != null)
                 {
                      var creditInfo = _selectedCustomer.CreditAccount != null 

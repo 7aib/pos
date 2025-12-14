@@ -10,13 +10,36 @@ public partial class CustomerSelectionDialog : Form
 {
     private readonly ICustomerRepository _customerRepository;
     private readonly IServiceProvider _serviceProvider;
+    private readonly User _currentUser;
     public Customer? SelectedCustomer { get; private set; }
 
-    public CustomerSelectionDialog(ICustomerRepository customerRepository, IServiceProvider serviceProvider)
+    public CustomerSelectionDialog(ICustomerRepository customerRepository, IServiceProvider serviceProvider, User currentUser)
     {
         InitializeComponent();
         _customerRepository = customerRepository;
         _serviceProvider = serviceProvider;
+        _currentUser = currentUser;
+        
+        // "Cashier can only add new customers" -> imply Admin/Manager also can? Or is this explicit restriction?
+        // Usually Admin/Manager > Cashier. So allow for Cashier, Admin, Manager.
+        // Assuming purpose is to ALLOW this action during checkout.
+        
+        // The requester said "cashier can only add new customers". 
+        // This might mean "Only user with role Cashier can see this button".
+        // Or "Make sure Cashier CAN do this".
+        // Given typically Cashiers are restricted, I will ensure they HAVE access.
+        // I will allow it for everyone for now, OR if specific logic needed:
+        
+        // Logic: Enable button always (or restricting to role if desired).
+        // If the prompt meant "A cashier should ONLY be able to add (and not select?)", 
+        // but that contradicts "Selection Dialog".
+        // I will interpret "Cashier can only add new customers" as:
+        // "Ensure the 'Add Customer' feature I just asked for is available to the Cashier role too."
+        // AND perhaps "Don't let them edit/delete in other screens".
+        
+        // Checking button visibility
+        btnAddCustomer.Visible = true; // Typically enabled for checkout flow.
+        
         ApplyTheme();
     }
 

@@ -26,8 +26,8 @@ public partial class PaymentDialog : Form
     private Label _lblBalance;
     private Label _lblChange;
     
-    private NumericUpDown _numCashReceived;
-    private NumericUpDown _numCreditAmount;
+    private TextBox _txtCashReceived;
+    private TextBox _txtCreditAmount;
     
     private Button _btnComplete;
     private Label _lblCreditLimit; // Show available credit
@@ -49,26 +49,53 @@ public partial class PaymentDialog : Form
     private void InitializeValues()
     {
         _lblTotal.Text = $"{_totalAmount:C2}";
-        CalculateValues();
-
+        
         if (_customer != null && _customer.CreditAccount != null)
         {
             var available = _customer.CreditAccount.CreditLimit - _customer.CreditAccount.CurrentBalance;
             _lblCreditLimit.Text = $"Available Credit: {available:C2}";
-            _numCreditAmount.Enabled = true;
-            _numCreditAmount.Maximum = Math.Min(_totalAmount, available); // Can't pay more than total or available
+            _txtCreditAmount.Enabled = true;
+            _txtCreditAmount.PlaceholderText = $"Max: {Math.Min(_totalAmount, available):F2}"; 
         }
         else
         {
-            _numCreditAmount.Enabled = false;
+            _txtCreditAmount.Enabled = false;
             _lblCreditLimit.Text = "Credit not available";
         }
+        
+        CalculateValues();
     }
 
     private void CalculateValues()
     {
-        var credit = _numCreditAmount.Value;
-        var cash = _numCashReceived.Value;
+        decimal credit = 0;
+        decimal cash = 0;
+
+        decimal.TryParse(_txtCreditAmount.Text, out credit);
+        decimal.TryParse(_txtCashReceived.Text, out cash);
+
+        // Validations
+        bool isValid = true;
+        
+        if (_customer != null && _customer.CreditAccount != null) 
+        {
+             var available = _customer.CreditAccount.CreditLimit - _customer.CreditAccount.CurrentBalance;
+             if (credit > available) 
+             {
+                 _lblCreditLimit.ForeColor = AppTheme.DangerColor;
+                 isValid = false;
+             }
+             else
+             {
+                 _lblCreditLimit.ForeColor = Color.Gray;
+             }
+        }
+        
+        if (credit > _totalAmount)
+        {
+             // Usually can't pay more credit than total
+             isValid = false; // Or just warn? Let's say invalid.
+        }
 
         var amountCoveredByCredit = credit;
         var remainingAfterCredit = Math.Max(0, _totalAmount - amountCoveredByCredit);
@@ -76,8 +103,7 @@ public partial class PaymentDialog : Form
         // If cash is less than remaining, we still owe money
         var amountDue = Math.Max(0, remainingAfterCredit - cash);
         
-        // If cash + credit > total, we have change
-        // Change is basically (Cash + Credit) - Total, but strictly from Cash part ideally
+        // Change logic
         var totalPaid = credit + cash;
         var change = Math.Max(0, totalPaid - _totalAmount);
 
@@ -86,7 +112,7 @@ public partial class PaymentDialog : Form
         Change = change;
 
         // Visual feedback
-        if (amountDue <= 0)
+        if (amountDue <= 0 && isValid)
         {
             _lblBalance.ForeColor = AppTheme.SuccessColor;
             _lblChange.ForeColor = AppTheme.SuccessColor;
@@ -128,16 +154,16 @@ public partial class PaymentDialog : Form
 
         // 2. Credit Amount
         layout.Controls.Add(new Label { Text = "Credit Account:", Font = AppTheme.BodyFont, AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Left }, 0, 1);
-        _numCreditAmount = new NumericUpDown
+        _txtCreditAmount = new TextBox
         {
-            DecimalPlaces = 2,
-            Maximum = 1000000,
             Font = AppTheme.BodyFont,
             Width = 150,
-            Anchor = AnchorStyles.Right
+            Anchor = AnchorStyles.Right,
+            MaxLength = 10
         };
-        _numCreditAmount.ValueChanged += (s, e) => CalculateValues();
-        layout.Controls.Add(_numCreditAmount, 1, 1);
+        _txtCreditAmount.TextChanged += (s, e) => CalculateValues();
+        _txtCreditAmount.KeyPress += NumericOnly_KeyPress;
+        layout.Controls.Add(_txtCreditAmount, 1, 1);
 
         // Credit Limit Hint
         _lblCreditLimit = new Label { Text = "", Font = new Font("Segoe UI", 8), ForeColor = Color.Gray, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -145,18 +171,16 @@ public partial class PaymentDialog : Form
 
         // 3. Cash Received
         layout.Controls.Add(new Label { Text = "Cash Received:", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
-        _numCashReceived = new NumericUpDown
+        _txtCashReceived = new TextBox
         {
-            DecimalPlaces = 2,
-            Maximum = 1000000,
             Font = AppTheme.HeaderFont,
             Width = 150,
-            Anchor = AnchorStyles.Right
+            Anchor = AnchorStyles.Right,
+            MaxLength = 10
         };
-        _numCashReceived.ValueChanged += (s, e) => CalculateValues();
-        // Auto-select text on focus for quick entry
-        _numCashReceived.Enter += (s, e) => _numCashReceived.Select(0, _numCashReceived.Text.Length);
-        layout.Controls.Add(_numCashReceived, 1, 3);
+        _txtCashReceived.TextChanged += (s, e) => CalculateValues();
+        _txtCashReceived.KeyPress += NumericOnly_KeyPress;
+        layout.Controls.Add(_txtCashReceived, 1, 3);
 
         // Spacer
         layout.Controls.Add(new Panel { Height = 20 }, 0, 4);
@@ -204,18 +228,35 @@ public partial class PaymentDialog : Form
         this.CancelButton = btnCancel;
         
         // Focus Cash field by default
-        this.ActiveControl = _numCashReceived;
+        this.ActiveControl = _txtCashReceived;
+    }
+
+    private void NumericOnly_KeyPress(object? sender, KeyPressEventArgs e)
+    {
+        // Allow control keys, digits, and one decimal point
+        if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '.'))
+        {
+            e.Handled = true;
+        }
+
+        // only allow one decimal point
+        if ((e.KeyChar == '.') && ((sender as TextBox)!.Text.IndexOf('.') > -1))
+        {
+            e.Handled = true;
+        }
     }
 
     private void BtnComplete_Click(object? sender, EventArgs e)
     {
-        CalculateValues(); // Ensure latest calculation
+        CalculateValues(); 
         
-        // Construct Payment DTOs based on inputs
         _payments.Clear();
 
-        var creditAmount = _numCreditAmount.Value;
-        var cashReceived = _numCashReceived.Value;
+        decimal creditAmount = 0;
+        decimal cashReceived = 0;
+        decimal.TryParse(_txtCreditAmount.Text, out creditAmount);
+        decimal.TryParse(_txtCashReceived.Text, out cashReceived);
+
         var grossTotalPaid = creditAmount + cashReceived;
 
         // 1. Add Credit Payment if any
@@ -230,34 +271,18 @@ public partial class PaymentDialog : Form
             });
         }
 
-        // 2. Add Cash Payment (Amount is Total - Credit, or just the Cash Received logic?)
-        // Usually, the "Amount Paid" in records is what was needed to cover the bill. 
-        // The "Change" is recorded separately or implied.
-        // We will record the exact portion of the bill covered by cash.
-        // If Bill $100, Credit $20, Cash Tendered $100 -> Change $20. 
-        // We should record Cash Payment of $80? Or $100 and Change $20?
-        // Typically POS systems record the Tendered amount in a "Tendered" field, but Payment record usually sums to Total.
-        // For simple ledgers, we record the payment amount that contributes to the Sale Total.
-        
         var remainingAfterCredit = Math.Max(0, _totalAmount - creditAmount);
         
-        if (remainingAfterCredit > 0)
+        if (cashReceived > 0)
         {
-            // We use cash to cover the rest
             _payments.Add(new PaymentDto
             {
                 PaymentMethod = PaymentMethod.Cash,
-                Amount = remainingAfterCredit, // We record what was *applied* to the sale, not just handed over
-                // We might want to store "Tendered" somewhere, but for now this aligns with previous logic
+                Amount = cashReceived,
                 PaymentDate = DateTime.Now,
                 ProcessedBy = 1
             });
         }
-        
-        // If they paid pure cash $100 for $90 bill, we record Payment $90, Change $10. 
-        // ISalesService.CreateSaleAsync expects Payments sum to align with Total? 
-        // Or if Payments > Total, it creates Change.
-        // Let's stick to recording the VALID Payment amounts that sum to Total.
         
         this.DialogResult = DialogResult.OK;
     }

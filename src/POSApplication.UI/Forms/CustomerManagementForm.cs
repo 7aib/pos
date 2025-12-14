@@ -30,7 +30,7 @@ public class CustomerManagementForm : Form
     private void InitializeComponent()
     {
         this.Text = "Customer Management";
-        this.Size = new Size(1000, 700);
+        this.Size = new Size(1000, 800);
         this.StartPosition = FormStartPosition.CenterScreen;
         this.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
@@ -38,19 +38,19 @@ public class CustomerManagementForm : Form
         var topPanel = new Panel { Dock = DockStyle.Top, Height = 60, Padding = new Padding(15) };
         
         var lblSearch = new Label { Text = "Search:", AutoSize = true, Location = new Point(15, 20) };
-        _searchBox = new TextBox { Location = new Point(70, 17), Width = 300, PlaceholderText = "Search by Name, Phone, or Email" };
+        _searchBox = new TextBox { Location = new Point(90, 17), Width = 300, PlaceholderText = "Search by Name, Phone, or Email" };
         _searchBox.TextChanged += async (s, e) => await SearchCustomers(_searchBox.Text);
 
-        _btnAdd = new Button { Text = "Add Customer", Location = new Point(400, 15), Width = 150, Height = 30, BackColor = Color.FromArgb(0, 122, 204), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+        _btnAdd = new Button { Text = "Add Customer", Location = new Point(490, 15), Width = 150, Height = 30, BackColor = Color.FromArgb(0, 122, 204), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         _btnAdd.Click += BtnAdd_Click;
 
-        _btnEdit = new Button { Text = "Edit", Location = new Point(560, 15), Width = 100, Height = 30, BackColor = Color.FromArgb(240, 240, 240), FlatStyle = FlatStyle.Flat };
+        _btnEdit = new Button { Text = "Edit", Location = new Point(650, 15), Width = 100, Height = 30, BackColor = Color.FromArgb(240, 240, 240), FlatStyle = FlatStyle.Flat };
         _btnEdit.Click += BtnEdit_Click;
 
-        _btnDelete = new Button { Text = "Delete", Location = new Point(670, 15), Width = 100, Height = 30, BackColor = Color.IndianRed, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+        _btnDelete = new Button { Text = "Delete", Location = new Point(760, 15), Width = 100, Height = 30, BackColor = Color.IndianRed, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         _btnDelete.Click += BtnDelete_Click;
         
-        _btnRefresh = new Button { Text = "Refresh", Location = new Point(780, 15), Width = 100, Height = 30, BackColor = Color.Lavender, FlatStyle = FlatStyle.Flat };
+        _btnRefresh = new Button { Text = "Refresh", Location = new Point(870, 15), Width = 100, Height = 30, BackColor = Color.Lavender, FlatStyle = FlatStyle.Flat };
         _btnRefresh.Click += async (s, e) => { _searchBox.Text = string.Empty; await LoadCustomers(); };
 
         topPanel.Controls.Add(lblSearch);

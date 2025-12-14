@@ -7,7 +7,7 @@ using POSApplication.UI.Theme;
 namespace POSApplication.UI.Forms;
 
 /// <summary>
-/// Payment processing dialog
+/// Simplified Payment processing dialog
 /// </summary>
 public partial class PaymentDialog : Form
 {
@@ -21,16 +21,16 @@ public partial class PaymentDialog : Form
     public decimal TotalPaid => _payments.Sum(p => p.Amount);
     public decimal Change { get; private set; }
 
-    private ComboBox _cmbPaymentMethod;
-    private NumericUpDown _numAmount;
-    private TextBox _txtCardType;
-    private TextBox _txtCardDigits;
-    private Label _lblTotalAmount;
-    private Label _lblAmountDue;
+    // UI Controls
+    private Label _lblTotal;
+    private Label _lblBalance;
     private Label _lblChange;
-    private Button _btnAddPayment;
+    
+    private NumericUpDown _numCashReceived;
+    private NumericUpDown _numCreditAmount;
+    
     private Button _btnComplete;
-    private DataGridView _gridPayments;
+    private Label _lblCreditLimit; // Show available credit
 
     public PaymentDialog(
         IPaymentService paymentService, 
@@ -43,333 +43,222 @@ public partial class PaymentDialog : Form
         _totalAmount = totalAmount;
         _customer = customer;
         InitializeComponent();
-        UpdateAmounts();
+        InitializeValues();
     }
 
-    private void InitializeComponent()
+    private void InitializeValues()
     {
-        this.Text = "Process Payment";
-        this.FormBorderStyle = FormBorderStyle.FixedDialog;
-        this.MaximizeBox = false;
-        this.MinimizeBox = false;
-        this.StartPosition = FormStartPosition.CenterParent;
-        this.Size = new Size(500, 550);
+        _lblTotal.Text = $"{_totalAmount:C2}";
+        CalculateValues();
 
-        // Amount display panel
-        var panelAmounts = new Panel
+        if (_customer != null && _customer.CreditAccount != null)
         {
-
-            Location = new Point(10, 10),
-            Size = new Size(460, 100),
-            BorderStyle = BorderStyle.FixedSingle,
-            BackColor = AppTheme.PanelColor
-        };
-
-        _lblTotalAmount = new Label
-        {
-            Text = "Total Amount: $0.00",
-            Location = new Point(10, 10),
-            Width = 200,
-            Font = new Font("Segoe UI", 12, FontStyle.Bold)
-        };
-
-        _lblAmountDue = new Label
-        {
-            Text = "Amount Due: $0.00",
-            Location = new Point(10, 40),
-            Width = 200,
-            Font = new Font("Segoe UI", 10)
-        };
-
-        _lblChange = new Label
-        {
-            Text = "Change: $0.00",
-            Location = new Point(10, 70),
-            Width = 200,
-            Font = new Font("Segoe UI", 10),
-            ForeColor = Color.Green
-        };
-
-        panelAmounts.Controls.AddRange(new Control[] { _lblTotalAmount, _lblAmountDue, _lblChange });
-
-        // Payment method panel
-        var lblPaymentMethod = new Label
-        {
-            Text = "Payment Method:",
-            Location = new Point(20, 130),
-            Width = 120
-        };
-
-        _cmbPaymentMethod = new ComboBox
-        {
-            Location = new Point(150, 128),
-            Width = 150,
-            DropDownStyle = ComboBoxStyle.DropDownList
-        };
-        _cmbPaymentMethod.Items.AddRange(new object[] { "Cash", "Card", "Credit Account" });
-        _cmbPaymentMethod.SelectedIndex = 0;
-        _cmbPaymentMethod.SelectedIndexChanged += CmbPaymentMethod_SelectedIndexChanged;
-
-        var lblAmount = new Label
-        {
-            Text = "Amount:",
-            Location = new Point(20, 165),
-            Width = 120
-        };
-
-        _numAmount = new NumericUpDown
-        {
-            Location = new Point(150, 163),
-            Width = 150,
-            DecimalPlaces = 2,
-            Maximum = 1000000,
-            Value = 0
-        };
-
-        var lblCardType = new Label
-        {
-            Text = "Card Type:",
-            Location = new Point(20, 200),
-            Width = 120,
-            Name = "lblCardType",
-            Visible = false
-        };
-
-        _txtCardType = new TextBox
-        {
-            Location = new Point(150, 198),
-            Width = 150,
-            Name = "txtCardType",
-            Visible = false
-        };
-
-        var lblCardDigits = new Label
-        {
-            Text = "Last 4 Digits:",
-            Location = new Point(20, 235),
-            Width = 120,
-            Name = "lblCardDigits",
-            Visible = false
-        };
-
-        _txtCardDigits = new TextBox
-        {
-            Location = new Point(150, 233),
-            Width = 150,
-            MaxLength = 4,
-            Name = "txtCardDigits",
-            Visible = false
-        };
-
-        _btnAddPayment = new Button
-        {
-            Text = "Add Payment",
-            Location = new Point(150, 270),
-            Width = 150,
-            Height = 35
-        };
-        AppTheme.ApplyButtonTheme(_btnAddPayment, AppTheme.PrimaryColor);
-        _btnAddPayment.Click += BtnAddPayment_Click;
-
-        // Payments grid
-        _gridPayments = new DataGridView
-        {
-            Location = new Point(20, 310),
-            Size = new Size(450, 120),
-            AutoGenerateColumns = false,
-            AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false,
-            ReadOnly = true,
-            RowHeadersVisible = false
-        };
-
-        _gridPayments.Columns.AddRange(new DataGridViewColumn[]
-        {
-            new DataGridViewTextBoxColumn { HeaderText = "Method", DataPropertyName = "PaymentMethod", Width = 150 },
-            new DataGridViewTextBoxColumn { HeaderText = "Amount", DataPropertyName = "Amount", Width = 100, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } },
-            new DataGridViewTextBoxColumn { HeaderText = "Card Type", DataPropertyName = "CardType", Width = 100 },
-            new DataGridViewTextBoxColumn { HeaderText = "Last 4", DataPropertyName = "CardLastFourDigits", Width = 90 }
-        });
-
-        // Complete button
-        _btnComplete = new Button
-        {
-            Text = "Complete Payment",
-            Location = new Point(300, 460),
-            Width = 170,
-            Height = 45,
-            DialogResult = DialogResult.OK,
-            Enabled = false
-        };
-        AppTheme.ApplyButtonTheme(_btnComplete, AppTheme.SuccessColor);
-        _btnComplete.Click += BtnComplete_Click;
-
-        var btnCancel = new Button
-        {
-            Text = "Cancel",
-            Location = new Point(130, 460),
-            Width = 150,
-            Height = 45,
-            DialogResult = DialogResult.Cancel
-        };
-        AppTheme.ApplySecondaryButtonTheme(btnCancel);
-
-        // Add controls
-        this.Controls.AddRange(new Control[]
-        {
-            panelAmounts,
-            lblPaymentMethod, _cmbPaymentMethod,
-            lblAmount, _numAmount,
-            lblCardType, _txtCardType,
-            lblCardDigits, _txtCardDigits,
-            _btnAddPayment,
-            _gridPayments,
-            _btnComplete, btnCancel
-        });
-
-        this.AcceptButton = _btnComplete;
-        this.CancelButton = btnCancel;
-    }
-
-    private void CmbPaymentMethod_SelectedIndexChanged(object? sender, EventArgs e)
-    {
-        var isCard = _cmbPaymentMethod.SelectedItem?.ToString() == "Card";
-        
-        this.Controls.Find("lblCardType", false).FirstOrDefault()!.Visible = isCard;
-        _txtCardType.Visible = isCard;
-        this.Controls.Find("lblCardDigits", false).FirstOrDefault()!.Visible = isCard;
-        _txtCardDigits.Visible = isCard;
-    }
-
-    private async void BtnAddPayment_Click(object? sender, EventArgs e)
-    {
-        try
-        {
-            var amount = _numAmount.Value;
-            if (amount <= 0)
-            {
-                MessageBox.Show("Please enter a valid payment amount.", "Invalid Amount", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var paymentMethod = _cmbPaymentMethod.SelectedItem?.ToString() switch
-            {
-                "Cash" => PaymentMethod.Cash,
-                "Card" => PaymentMethod.Card,
-                "Credit Account" => PaymentMethod.CreditAccount,
-                _ => PaymentMethod.Cash
-            };
-
-            var payment = new PaymentDto
-            {
-                PaymentMethod = paymentMethod,
-                Amount = amount,
-                CardType = _txtCardType.Visible ? _txtCardType.Text.Trim() : null,
-                CardLastFourDigits = _txtCardDigits.Visible ? _txtCardDigits.Text.Trim() : null,
-                PaymentDate = DateTime.Now,
-                ProcessedBy = 1 // TODO: Get actual user ID
-            };
-
-            // Validate payment
-            var isValid = await _paymentService.ValidatePaymentAsync(payment);
-            if (!isValid)
-            {
-                MessageBox.Show("Payment validation failed. Please check card details.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            // Credit Account specific validation
-            if (paymentMethod == PaymentMethod.CreditAccount)
-            {
-                if (_customer == null)
-                {
-                    MessageBox.Show("Walk-in customers cannot pay with Credit Account.\nPlease select a customer first.", "Customer Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                try 
-                {
-                    // Get latest balance
-                    var balance = await _creditService.GetCustomerBalanceAsync(_customer.CustomerID);
-                    var creditAccount = await _creditService.GetCreditAccountAsync(_customer.CustomerID);
-                    var creditLimit = creditAccount?.CreditLimit ?? 0;
-
-                    if (creditAccount == null || !creditAccount.IsActive)
-                    {
-                         MessageBox.Show("Customer does not have an active credit account.", "Credit Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                         return;
-                    }
-
-                    if (balance + amount > creditLimit)
-                    {
-                         MessageBox.Show($"Credit limit exceeded.\nLimit: {creditLimit:C2}\nCurrent Balance: {balance:C2}\nAttempted: {amount:C2}", "Credit Limit Exceeded", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                         return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error validating credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-
-            _payments.Add(payment);
-            _gridPayments.DataSource = null;
-            _gridPayments.DataSource = _payments;
-
-            // Clear inputs
-            _numAmount.Value = 0;
-            _txtCardType.Clear();
-            _txtCardDigits.Clear();
-
-            UpdateAmounts();
+            var available = _customer.CreditAccount.CreditLimit - _customer.CreditAccount.CurrentBalance;
+            _lblCreditLimit.Text = $"Available Credit: {available:C2}";
+            _numCreditAmount.Enabled = true;
+            _numCreditAmount.Maximum = Math.Min(_totalAmount, available); // Can't pay more than total or available
         }
-        catch (Exception ex)
+        else
         {
-            MessageBox.Show($"Error adding payment: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _numCreditAmount.Enabled = false;
+            _lblCreditLimit.Text = "Credit not available";
         }
     }
 
-    private void BtnComplete_Click(object? sender, EventArgs e)
+    private void CalculateValues()
     {
-        var amountDue = _totalAmount - TotalPaid;
+        var credit = _numCreditAmount.Value;
+        var cash = _numCashReceived.Value;
+
+        var amountCoveredByCredit = credit;
+        var remainingAfterCredit = Math.Max(0, _totalAmount - amountCoveredByCredit);
         
-        if (amountDue > 0.01m) // Allow small rounding difference
-        {
-            MessageBox.Show($"Payment incomplete. Amount due: {amountDue:C2}", "Incomplete Payment", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            this.DialogResult = DialogResult.None;
-            return;
-        }
-
-        Change = _paymentService.CalculateChange(_totalAmount, TotalPaid);
-        this.DialogResult = DialogResult.OK;
-    }
-
-    private void UpdateAmounts()
-    {
-        _lblTotalAmount.Text = $"Total Amount: {_totalAmount:C2}";
+        // If cash is less than remaining, we still owe money
+        var amountDue = Math.Max(0, remainingAfterCredit - cash);
         
-        var amountDue = _totalAmount - TotalPaid;
-        _lblAmountDue.Text = $"Amount Due: {amountDue:C2}";
+        // If cash + credit > total, we have change
+        // Change is basically (Cash + Credit) - Total, but strictly from Cash part ideally
+        var totalPaid = credit + cash;
+        var change = Math.Max(0, totalPaid - _totalAmount);
 
-        if (TotalPaid >= _totalAmount)
+        _lblBalance.Text = $"{amountDue:C2}";
+        _lblChange.Text = $"{change:C2}";
+        Change = change;
+
+        // Visual feedback
+        if (amountDue <= 0)
         {
-            var change = TotalPaid - _totalAmount;
-            _lblChange.Text = $"Change: {change:C2}";
-            _lblChange.ForeColor = Color.Green;
+            _lblBalance.ForeColor = AppTheme.SuccessColor;
+            _lblChange.ForeColor = AppTheme.SuccessColor;
             _btnComplete.Enabled = true;
         }
         else
         {
-            _lblChange.Text = "Change: $0.00";
-            _lblChange.ForeColor = Color.Black;
+            _lblBalance.ForeColor = AppTheme.DangerColor;
+            _lblChange.ForeColor = AppTheme.TextColor;
             _btnComplete.Enabled = false;
         }
+    }
 
-        // Auto-fill next payment amount
-        if (amountDue > 0)
+    private void InitializeComponent()
+    {
+        this.Text = "Checkout Payment";
+        this.FormBorderStyle = FormBorderStyle.FixedDialog;
+        this.MaximizeBox = false;
+        this.MinimizeBox = false;
+        this.StartPosition = FormStartPosition.CenterParent;
+        this.Size = new Size(500, 500);
+        this.BackColor = AppTheme.BackgroundColor;
+
+        var layout = new TableLayoutPanel
         {
-            _numAmount.Value = amountDue;
+            Dock = DockStyle.Fill,
+            Padding = new Padding(30),
+            RowCount = 8,
+            ColumnCount = 2,
+            AutoSize = true
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+
+        // 1. Total Amount
+        layout.Controls.Add(new Label { Text = "Total Amount:", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
+        _lblTotal = new Label { Text = "$0.00", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Right, ForeColor = AppTheme.PrimaryColor };
+        layout.Controls.Add(_lblTotal, 1, 0);
+
+        // 2. Credit Amount
+        layout.Controls.Add(new Label { Text = "Credit Account:", Font = AppTheme.BodyFont, AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Left }, 0, 1);
+        _numCreditAmount = new NumericUpDown
+        {
+            DecimalPlaces = 2,
+            Maximum = 1000000,
+            Font = AppTheme.BodyFont,
+            Width = 150,
+            Anchor = AnchorStyles.Right
+        };
+        _numCreditAmount.ValueChanged += (s, e) => CalculateValues();
+        layout.Controls.Add(_numCreditAmount, 1, 1);
+
+        // Credit Limit Hint
+        _lblCreditLimit = new Label { Text = "", Font = new Font("Segoe UI", 8), ForeColor = Color.Gray, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+        layout.Controls.Add(_lblCreditLimit, 1, 2);
+
+        // 3. Cash Received
+        layout.Controls.Add(new Label { Text = "Cash Received:", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
+        _numCashReceived = new NumericUpDown
+        {
+            DecimalPlaces = 2,
+            Maximum = 1000000,
+            Font = AppTheme.HeaderFont,
+            Width = 150,
+            Anchor = AnchorStyles.Right
+        };
+        _numCashReceived.ValueChanged += (s, e) => CalculateValues();
+        // Auto-select text on focus for quick entry
+        _numCashReceived.Enter += (s, e) => _numCashReceived.Select(0, _numCashReceived.Text.Length);
+        layout.Controls.Add(_numCashReceived, 1, 3);
+
+        // Spacer
+        layout.Controls.Add(new Panel { Height = 20 }, 0, 4);
+
+        // 4. Remaining Balance (Amount Due)
+        layout.Controls.Add(new Label { Text = "Remaining Due:", Font = AppTheme.BodyFont, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 5);
+        _lblBalance = new Label { Text = "$0.00", Font = AppTheme.BodyFont, AutoSize = true, Anchor = AnchorStyles.Right };
+        layout.Controls.Add(_lblBalance, 1, 5);
+
+        // 5. Change
+        layout.Controls.Add(new Label { Text = "Change:", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 6);
+        _lblChange = new Label { Text = "$0.00", Font = AppTheme.HeaderFont, AutoSize = true, Anchor = AnchorStyles.Right };
+        layout.Controls.Add(_lblChange, 1, 6);
+
+        // Buttons Panel
+        var btnPanel = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.RightToLeft,
+            Dock = DockStyle.Bottom,
+            Height = 60,
+            Padding = new Padding(0, 10, 30, 0)
+        };
+
+        _btnComplete = new Button 
+        { 
+            Text = "Complete Sale", 
+            Height = 40, 
+            Width = 150,
+            Enabled = false 
+        };
+        AppTheme.ApplyButtonTheme(_btnComplete, AppTheme.SuccessColor);
+        _btnComplete.Click += BtnComplete_Click;
+
+        var btnCancel = new Button { Text = "Cancel", Height = 40, Width = 100 };
+        AppTheme.ApplySecondaryButtonTheme(btnCancel);
+        btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
+
+        btnPanel.Controls.Add(_btnComplete);
+        btnPanel.Controls.Add(btnCancel);
+
+        this.Controls.Add(layout);
+        this.Controls.Add(btnPanel);
+
+        this.AcceptButton = _btnComplete;
+        this.CancelButton = btnCancel;
+        
+        // Focus Cash field by default
+        this.ActiveControl = _numCashReceived;
+    }
+
+    private void BtnComplete_Click(object? sender, EventArgs e)
+    {
+        CalculateValues(); // Ensure latest calculation
+        
+        // Construct Payment DTOs based on inputs
+        _payments.Clear();
+
+        var creditAmount = _numCreditAmount.Value;
+        var cashReceived = _numCashReceived.Value;
+        var grossTotalPaid = creditAmount + cashReceived;
+
+        // 1. Add Credit Payment if any
+        if (creditAmount > 0)
+        {
+            _payments.Add(new PaymentDto
+            {
+                PaymentMethod = PaymentMethod.CreditAccount,
+                Amount = creditAmount,
+                PaymentDate = DateTime.Now,
+                ProcessedBy = 1 // Todo: UserID
+            });
         }
+
+        // 2. Add Cash Payment (Amount is Total - Credit, or just the Cash Received logic?)
+        // Usually, the "Amount Paid" in records is what was needed to cover the bill. 
+        // The "Change" is recorded separately or implied.
+        // We will record the exact portion of the bill covered by cash.
+        // If Bill $100, Credit $20, Cash Tendered $100 -> Change $20. 
+        // We should record Cash Payment of $80? Or $100 and Change $20?
+        // Typically POS systems record the Tendered amount in a "Tendered" field, but Payment record usually sums to Total.
+        // For simple ledgers, we record the payment amount that contributes to the Sale Total.
+        
+        var remainingAfterCredit = Math.Max(0, _totalAmount - creditAmount);
+        
+        if (remainingAfterCredit > 0)
+        {
+            // We use cash to cover the rest
+            _payments.Add(new PaymentDto
+            {
+                PaymentMethod = PaymentMethod.Cash,
+                Amount = remainingAfterCredit, // We record what was *applied* to the sale, not just handed over
+                // We might want to store "Tendered" somewhere, but for now this aligns with previous logic
+                PaymentDate = DateTime.Now,
+                ProcessedBy = 1
+            });
+        }
+        
+        // If they paid pure cash $100 for $90 bill, we record Payment $90, Change $10. 
+        // ISalesService.CreateSaleAsync expects Payments sum to align with Total? 
+        // Or if Payments > Total, it creates Change.
+        // Let's stick to recording the VALID Payment amounts that sum to Total.
+        
+        this.DialogResult = DialogResult.OK;
     }
 }

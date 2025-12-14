@@ -65,7 +65,8 @@ public partial class MainForm : Form
             creditService, 
             printerService,
             inventoryService,
-            customerRepository);
+            customerRepository,
+            _serviceProvider);
         checkoutForm.ShowDialog();
     }
 

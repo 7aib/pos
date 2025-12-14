@@ -2,19 +2,35 @@ using POSApplication.Core.Entities;
 using POSApplication.Data.Interfaces;
 using POSApplication.UI.Theme;
 using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace POSApplication.UI.Forms;
 
 public partial class CustomerSelectionDialog : Form
 {
     private readonly ICustomerRepository _customerRepository;
+    private readonly IServiceProvider _serviceProvider;
     public Customer? SelectedCustomer { get; private set; }
 
-    public CustomerSelectionDialog(ICustomerRepository customerRepository)
+    public CustomerSelectionDialog(ICustomerRepository customerRepository, IServiceProvider serviceProvider)
     {
         InitializeComponent();
         _customerRepository = customerRepository;
+        _serviceProvider = serviceProvider;
         ApplyTheme();
+    }
+
+    private void btnAddCustomer_Click(object? sender, EventArgs e) 
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var editDialog = scope.ServiceProvider.GetRequiredService<CustomerEditDialog>();
+        
+        if (editDialog.ShowDialog() == DialogResult.OK)
+        {
+             // Clear search and reload
+             txtSearch.Text = ""; 
+             PerformSearch().Wait(); // Or async void
+        }
     }
 
     private void ApplyTheme()
@@ -22,6 +38,7 @@ public partial class CustomerSelectionDialog : Form
         this.BackColor = AppTheme.BackgroundColor;
         
         AppTheme.ApplyButtonTheme(btnSearch, AppTheme.PrimaryColor);
+        AppTheme.ApplyButtonTheme(btnAddCustomer, AppTheme.PrimaryColor);
         AppTheme.ApplyButtonTheme(btnSelect, AppTheme.SuccessColor);
         AppTheme.ApplySecondaryButtonTheme(btnCancel);
 

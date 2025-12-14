@@ -22,6 +22,7 @@ public partial class POSCheckoutForm : Form
     private readonly IInventoryService _inventoryService;
     private readonly ICustomerRepository _customerRepository;
     private readonly CartManager _cartManager;
+    private readonly IServiceProvider _serviceProvider;
 
     private Customer? _selectedCustomer;
     private Label _lblCustomerName;
@@ -48,7 +49,8 @@ public partial class POSCheckoutForm : Form
         ICreditService creditService,
         IPrinterService printerService,
         IInventoryService inventoryService,
-        ICustomerRepository customerRepository)
+        ICustomerRepository customerRepository,
+        IServiceProvider serviceProvider)
     {
         _productService = productService;
         _salesService = salesService;
@@ -57,6 +59,7 @@ public partial class POSCheckoutForm : Form
         _printerService = printerService;
         _inventoryService = inventoryService;
         _customerRepository = customerRepository;
+        _serviceProvider = serviceProvider;
         _cartManager = new CartManager();
         _cartManager.CartChanged += CartManager_CartChanged;
 
@@ -361,21 +364,28 @@ public partial class POSCheckoutForm : Form
 
     private void BtnSelectCustomer_Click(object? sender, EventArgs e)
     {
-        using (var dlg = new CustomerSelectionDialog(_customerRepository))
+        using (var dlg = new CustomerSelectionDialog(_customerRepository, _serviceProvider))
         {
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 _selectedCustomer = dlg.SelectedCustomer;
-                _lblCustomerName.Text = _selectedCustomer != null 
-                    ? $"Customer: {_selectedCustomer.FirstName} {_selectedCustomer.LastName}"
-                    : "Customer: Walk-in";
-                    
-                if (_selectedCustomer?.CreditAccount != null)
+                if (_selectedCustomer != null)
                 {
-                     _lblCustomerName.Text += $" (Credit: {_selectedCustomer.CreditAccount.CurrentBalance:C2} / {_selectedCustomer.CreditAccount.CreditLimit:C2})";
+                     var creditInfo = _selectedCustomer.CreditAccount != null 
+                        ? $" (Credit: {_selectedCustomer.CreditAccount.CurrentBalance:C2} / {_selectedCustomer.CreditAccount.CreditLimit:C2})"
+                        : "";
+                     
+                     _lblCustomerName.Text = $"Customer: {_selectedCustomer.FirstName} {_selectedCustomer.LastName}{creditInfo}";
+                }
+                else
+                {
+                    _lblCustomerName.Text = "Customer: Walk-in";
                 }
                 
                 _btnPayBalance.Enabled = _selectedCustomer != null;
+                
+                // Also update Payment Dialog if it were open (but it's modal so it isn't)
+                // But we might need to invalidate cart calculations if we had customer-specific pricing (not yet)
             }
         }
     }

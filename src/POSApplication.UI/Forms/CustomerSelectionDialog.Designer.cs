@@ -20,6 +20,7 @@ partial class CustomerSelectionDialog
         this.dgvCustomers = new System.Windows.Forms.DataGridView();
         this.btnSelect = new System.Windows.Forms.Button();
         this.btnCancel = new System.Windows.Forms.Button();
+        this.btnAddCustomer = new System.Windows.Forms.Button();
         ((System.ComponentModel.ISupportInitialize)(this.dgvCustomers)).BeginInit();
         this.SuspendLayout();
         // 
@@ -78,11 +79,22 @@ partial class CustomerSelectionDialog
         this.btnCancel.Text = "Cancel";
         this.btnCancel.UseVisualStyleBackColor = true;
         // 
+        // btnAddCustomer
+        // 
+        this.btnAddCustomer.Location = new System.Drawing.Point(12, 315);
+        this.btnAddCustomer.Name = "btnAddCustomer";
+        this.btnAddCustomer.Size = new System.Drawing.Size(120, 30);
+        this.btnAddCustomer.TabIndex = 5;
+        this.btnAddCustomer.Text = "New Customer";
+        this.btnAddCustomer.UseVisualStyleBackColor = true;
+        this.btnAddCustomer.Click += new System.EventHandler(this.btnAddCustomer_Click);
+        // 
         // CustomerSelectionDialog
         // 
         this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
         this.ClientSize = new System.Drawing.Size(584, 361);
+        this.Controls.Add(this.btnAddCustomer);
         this.Controls.Add(this.btnCancel);
         this.Controls.Add(this.btnSelect);
         this.Controls.Add(this.dgvCustomers);
@@ -104,4 +116,5 @@ partial class CustomerSelectionDialog
     private System.Windows.Forms.DataGridView dgvCustomers;
     private System.Windows.Forms.Button btnSelect;
     private System.Windows.Forms.Button btnCancel;
+    private System.Windows.Forms.Button btnAddCustomer;
 }

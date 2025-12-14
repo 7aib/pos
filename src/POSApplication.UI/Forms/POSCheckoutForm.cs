@@ -66,7 +66,7 @@ public partial class POSCheckoutForm : Form
     private void InitializeComponent()
     {
         this.Text = "POS Checkout";
-        this.Size = new Size(1200, 700);
+        this.Size = new Size(1300, 800);
         this.StartPosition = FormStartPosition.CenterScreen;
 
         // ===== LEFT PANEL: Product Search =====

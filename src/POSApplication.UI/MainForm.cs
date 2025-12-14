@@ -69,6 +69,14 @@ public partial class MainForm : Form
         checkoutForm.ShowDialog();
     }
 
+    private void customersToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var customerService = _serviceProvider.GetRequiredService<ICustomerService>();
+        // Check if we need to pass IServiceProvider to the form (based on Constructor)
+        var customerManagementForm = new CustomerManagementForm(customerService, _serviceProvider);
+        customerManagementForm.ShowDialog();
+    }
+
     private void productsToolStripMenuItem_Click(object sender, EventArgs e)
     {
         // Open Product Management form

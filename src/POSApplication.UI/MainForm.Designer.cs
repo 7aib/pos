@@ -32,6 +32,7 @@ namespace POSApplication.UI
             fileToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
             salesToolStripMenuItem = new ToolStripMenuItem();
+            customersToolStripMenuItem = new ToolStripMenuItem();
             inventoryToolStripMenuItem = new ToolStripMenuItem();
             productsToolStripMenuItem = new ToolStripMenuItem();
             reportsToolStripMenuItem = new ToolStripMenuItem();
@@ -50,7 +51,7 @@ namespace POSApplication.UI
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, salesToolStripMenuItem, inventoryToolStripMenuItem, reportsToolStripMenuItem, settingsToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, salesToolStripMenuItem, customersToolStripMenuItem, inventoryToolStripMenuItem, reportsToolStripMenuItem, settingsToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(1024, 24);
@@ -91,6 +92,13 @@ namespace POSApplication.UI
             salesToolStripMenuItem.Size = new Size(45, 20);
             salesToolStripMenuItem.Text = "Sales";
             salesToolStripMenuItem.Click += salesToolStripMenuItem_Click;
+            // 
+            // customersToolStripMenuItem
+            // 
+            customersToolStripMenuItem.Name = "customersToolStripMenuItem";
+            customersToolStripMenuItem.Size = new Size(76, 20);
+            customersToolStripMenuItem.Text = "Customers";
+            customersToolStripMenuItem.Click += customersToolStripMenuItem_Click;
             // 
             // inventoryToolStripMenuItem
             // 
@@ -191,6 +199,7 @@ namespace POSApplication.UI
         private ToolStripMenuItem logoutToolStripMenuItem;
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripMenuItem salesToolStripMenuItem;
+        private ToolStripMenuItem customersToolStripMenuItem;
         private ToolStripMenuItem inventoryToolStripMenuItem;
         private ToolStripMenuItem productsToolStripMenuItem;
         private ToolStripMenuItem reportsToolStripMenuItem;

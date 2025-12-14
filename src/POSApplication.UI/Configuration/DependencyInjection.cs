@@ -49,10 +49,13 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<ICreditService, CreditService>();
+        services.AddScoped<ICustomerService, CustomerService>();
 
         // Forms
         services.AddTransient<LoginForm>();
         services.AddTransient<MainForm>();
+        services.AddTransient<CustomerManagementForm>();
+        services.AddTransient<CustomerEditDialog>();
 
         // Infrastructure Services
         services.AddSingleton<IPrinterService, ThermalPrinterService>();

@@ -14,15 +14,22 @@ public class SalesService : ISalesService
     private readonly ISaleRepository _saleRepository;
     private readonly IProductRepository _productRepository;
     private readonly IInventoryService _inventoryService;
+    private readonly IRepository<Customer> _customerRepository;
+
+    private readonly ICurrentUserService _currentUserService;
 
     public SalesService(
         ISaleRepository saleRepository,
         IProductRepository productRepository,
-        IInventoryService inventoryService)
+        IInventoryService inventoryService,
+        IRepository<Customer> customerRepository,
+        ICurrentUserService currentUserService)
     {
         _saleRepository = saleRepository;
         _productRepository = productRepository;
         _inventoryService = inventoryService;
+        _customerRepository = customerRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<SaleDto> CreateSaleAsync(SaleDto saleDto)
@@ -80,7 +87,7 @@ public class SalesService : ISalesService
             ChangeGiven = totalPaid > total ? totalPaid - total : 0,
             Status = TransactionStatus.Completed,
             PaymentStatus = saleDto.PaymentStatus,
-            CashierID = saleDto.CashierID,
+            CashierID = _currentUserService.UserId ?? 1, // Fallback or throw exception
             Notes = saleDto.Notes,
             CreatedAt = DateTime.Now
         };
@@ -124,6 +131,22 @@ public class SalesService : ISalesService
             await _inventoryService.DeductStockAsync(item.ProductID, (int)item.Quantity, sale.SaleID);
         }
 
+        // Award loyalty points (1 point per dollar spent)
+        if (saleDto.CustomerID.HasValue)
+        {
+            var customer = await _customerRepository.GetByIdAsync(saleDto.CustomerID.Value);
+            if (customer != null)
+            {
+                var pointsEarned = (int)Math.Floor(total);
+                if (pointsEarned > 0)
+                {
+                    customer.LoyaltyPoints += pointsEarned;
+                    await _customerRepository.UpdateAsync(customer);
+                    await _customerRepository.SaveChangesAsync();
+                }
+            }
+        }
+
         // Return DTO
         var createdSale = await _saleRepository.GetSaleWithDetailsAsync(sale.SaleID);
         return MapToDto(createdSale!);
@@ -135,7 +158,7 @@ public class SalesService : ISalesService
         return sale != null ? MapToDto(sale) : null;
     }
 
-    public async Task<bool> VoidSaleAsync(int saleId, int userId, string reason)
+    public async Task<bool> VoidSaleAsync(int saleId, string reason)
     {
         var sale = await _saleRepository.GetSaleWithDetailsAsync(saleId);
         if (sale == null)
@@ -146,7 +169,7 @@ public class SalesService : ISalesService
 
         // Update sale status
         sale.Status = TransactionStatus.Voided;
-        sale.VoidedBy = userId;
+        sale.VoidedBy = _currentUserService.UserId;
         sale.VoidedAt = DateTime.Now;
         sale.VoidReason = reason;
 
@@ -162,7 +185,7 @@ public class SalesService : ISalesService
         return true;
     }
 
-    public async Task<(decimal Subtotal, decimal TaxAmount, decimal Total)> CalculateSaleTotalsAsync(
+    public Task<(decimal Subtotal, decimal TaxAmount, decimal Total)> CalculateSaleTotalsAsync(
         List<CartItemDto> items, decimal discountAmount)
     {
         decimal subtotal = 0;
@@ -178,8 +201,7 @@ public class SalesService : ISalesService
         }
 
         var total = subtotal + totalTax - discountAmount;
-
-        return (subtotal, totalTax, total);
+        return Task.FromResult((subtotal, totalTax, total));
     }
 
     private SaleDto MapToDto(Sale sale)

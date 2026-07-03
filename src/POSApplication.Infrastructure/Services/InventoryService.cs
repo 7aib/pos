@@ -2,6 +2,7 @@ using POSApplication.Common.Enums;
 using POSApplication.Core.Interfaces;
 using POSApplication.Core.Entities;
 using POSApplication.Data.Interfaces;
+using POSApplication.Infrastructure.Interfaces;
 
 namespace POSApplication.Infrastructure.Services;
 
@@ -12,13 +13,16 @@ public class InventoryService : IInventoryService
 {
     private readonly IProductRepository _productRepository;
     private readonly IRepository<StockAdjustment> _stockAdjustmentRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public InventoryService(
         IProductRepository productRepository,
-        IRepository<StockAdjustment> stockAdjustmentRepository)
+        IRepository<StockAdjustment> stockAdjustmentRepository,
+        ICurrentUserService currentUserService)
     {
         _productRepository = productRepository;
         _stockAdjustmentRepository = stockAdjustmentRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<bool> CheckStockAvailabilityAsync(int productId, decimal quantity)
@@ -47,7 +51,7 @@ public class InventoryService : IInventoryService
             AdjustmentType = quantity > 0 ? StockAdjustmentType.StockOut : StockAdjustmentType.StockIn,
             Quantity = -quantity, // Negative for deduction
             Reason = $"Sale transaction (Sale ID: {saleId})",
-            AdjustedBy = 1, // TODO: Get current user ID
+            AdjustedBy = _currentUserService.UserId ?? 1, // Fallback to 1 if system action
             CreatedAt = DateTime.Now
         };
 

@@ -15,6 +15,7 @@ public partial class PaymentDialog : Form
     private readonly ICreditService _creditService;
     private readonly decimal _totalAmount;
     private readonly Customer? _customer;
+    private readonly int _currentUserId;
     private readonly List<PaymentDto> _payments = new();
 
     public List<PaymentDto> Payments => _payments;
@@ -36,12 +37,14 @@ public partial class PaymentDialog : Form
         IPaymentService paymentService, 
         ICreditService creditService, 
         decimal totalAmount, 
-        Customer? customer)
+        Customer? customer,
+        int currentUserId)
     {
         _paymentService = paymentService;
         _creditService = creditService;
         _totalAmount = totalAmount;
         _customer = customer;
+        _currentUserId = currentUserId;
         InitializeComponent();
         InitializeValues();
     }
@@ -267,7 +270,7 @@ public partial class PaymentDialog : Form
                 PaymentMethod = PaymentMethod.CreditAccount,
                 Amount = creditAmount,
                 PaymentDate = DateTime.Now,
-                ProcessedBy = 1 // Todo: UserID
+                ProcessedBy = _currentUserId
             });
         }
 
@@ -280,7 +283,7 @@ public partial class PaymentDialog : Form
                 PaymentMethod = PaymentMethod.Cash,
                 Amount = cashReceived,
                 PaymentDate = DateTime.Now,
-                ProcessedBy = 1
+                ProcessedBy = _currentUserId
             });
         }
         

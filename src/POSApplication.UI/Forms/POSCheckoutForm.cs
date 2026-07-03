@@ -21,6 +21,7 @@ public partial class POSCheckoutForm : Form
     private readonly IPrinterService _printerService;
     private readonly IInventoryService _inventoryService;
     private readonly ICustomerRepository _customerRepository;
+    private readonly IDiscountService? _discountService;
     private readonly CartManager _cartManager;
     private readonly IServiceProvider _serviceProvider;
     private readonly User _currentUser;
@@ -38,9 +39,18 @@ public partial class POSCheckoutForm : Form
     private Button _btnAddToCart;
     private Label _lblSubtotal;
     private Label _lblTax;
+    private Label _lblDiscount;
     private Label _lblTotal;
     private Button _btnCompleteSale;
     private Button _btnClearCart;
+    private TextBox _txtDiscountCode;
+    private Button _btnApplyDiscount;
+    private Label _lblDiscountInfo;
+    private decimal _appliedDiscount = 0;
+    private string _appliedDiscountCode = string.Empty;
+    private CheckBox _chkRedeemPoints;
+    private Label _lblPointsInfo;
+    private decimal _redeemedPointsValue = 0;
     private List<ProductDto> _searchResults = new();
 
     public POSCheckoutForm(
@@ -52,7 +62,8 @@ public partial class POSCheckoutForm : Form
         IInventoryService inventoryService,
         ICustomerRepository customerRepository,
         IServiceProvider serviceProvider,
-        User currentUser)
+        User currentUser,
+        IDiscountService? discountService = null)
     {
         _productService = productService;
         _salesService = salesService;
@@ -63,6 +74,7 @@ public partial class POSCheckoutForm : Form
         _customerRepository = customerRepository;
         _serviceProvider = serviceProvider;
         _currentUser = currentUser;
+        _discountService = discountService;
         _cartManager = new CartManager();
         _cartManager.CartChanged += CartManager_CartChanged;
 
@@ -297,17 +309,60 @@ public partial class POSCheckoutForm : Form
             TextAlign = ContentAlignment.MiddleRight
         };
 
+        _lblDiscount = new Label
+        {
+            Text = "Discount: -$0.00",
+            Location = new Point(450, 70),
+            Width = 240,
+            Font = AppTheme.SubHeaderFont,
+            ForeColor = AppTheme.DangerColor,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
         _lblTotal = new Label
         {
             Text = "TOTAL: $0.00",
-            Location = new Point(450, 75),
+            Location = new Point(450, 105),
             Width = 240,
             Font = AppTheme.LargeFont,
             ForeColor = AppTheme.SuccessColor,
             TextAlign = ContentAlignment.MiddleRight
         };
 
-        panelTotals.Controls.AddRange(new Control[] { _lblSubtotal, _lblTax, _lblTotal });
+        panelTotals.Controls.AddRange(new Control[] { _lblSubtotal, _lblTax, _lblDiscount, _lblTotal });
+
+        // Discount code controls
+        var panelDiscount = new Panel
+        {
+            Location = new Point(10, 460),
+            Size = new Size(700, 30),
+            BackColor = AppTheme.PanelColor
+        };
+
+        var lblDiscountCode = new Label { Text = "Discount Code:", Location = new Point(0, 5), Width = 100, Font = AppTheme.BodyFont };
+        _txtDiscountCode = new TextBox { Location = new Point(110, 3), Width = 150, Font = AppTheme.BodyFont, CharacterCasing = CharacterCasing.Upper };
+        _btnApplyDiscount = new Button { Text = "Apply", Location = new Point(270, 1), Width = 70, Height = 27 };
+        AppTheme.ApplySecondaryButtonTheme(_btnApplyDiscount);
+        _btnApplyDiscount.Click += BtnApplyDiscount_Click;
+
+        _lblDiscountInfo = new Label { Text = "", Location = new Point(350, 5), Width = 340, Font = AppTheme.BodyFont, ForeColor = AppTheme.SuccessColor };
+
+        panelDiscount.Controls.AddRange(new Control[] { lblDiscountCode, _txtDiscountCode, _btnApplyDiscount, _lblDiscountInfo });
+
+        // Loyalty points controls
+        var panelPoints = new Panel
+        {
+            Location = new Point(10, 520),
+            Size = new Size(700, 30),
+            BackColor = AppTheme.PanelColor
+        };
+
+        _chkRedeemPoints = new CheckBox { Text = "Redeem Loyalty Points", Location = new Point(0, 5), Width = 170, Font = AppTheme.BodyFont };
+        _chkRedeemPoints.CheckedChanged += ChkRedeemPoints_CheckedChanged;
+
+        _lblPointsInfo = new Label { Text = "", Location = new Point(180, 5), Width = 500, Font = AppTheme.BodyFont, ForeColor = AppTheme.PrimaryColor };
+
+        panelPoints.Controls.AddRange(new Control[] { _chkRedeemPoints, _lblPointsInfo });
 
         _btnCompleteSale = new Button
         {
@@ -322,7 +377,7 @@ public partial class POSCheckoutForm : Form
         panelRight.Controls.AddRange(new Control[]
         {
             lblCart, _lblCustomerName, _btnSelectCustomer, _btnPayBalance, _gridCart,
-            btnRemoveItem, _btnClearCart,
+            btnRemoveItem, _btnClearCart, panelDiscount, panelPoints,
             panelTotals, _btnCompleteSale
         });
 
@@ -396,6 +451,12 @@ public partial class POSCheckoutForm : Form
                 }
                 
                 _btnPayBalance.Enabled = _selectedCustomer != null;
+                _chkRedeemPoints.Enabled = _selectedCustomer != null && _selectedCustomer.LoyaltyPoints > 0;
+
+                if (_selectedCustomer != null && _selectedCustomer.LoyaltyPoints > 0)
+                    _lblPointsInfo.Text = $"{_selectedCustomer.LoyaltyPoints} points available ({_selectedCustomer.LoyaltyPoints * 0.01m:C2} value)";
+                else
+                    _lblPointsInfo.Text = "";
                 
                 // Also update Payment Dialog if it were open (but it's modal so it isn't)
                 // But we might need to invalidate cart calculations if we had customer-specific pricing (not yet)
@@ -409,7 +470,7 @@ public partial class POSCheckoutForm : Form
     {
         if (_selectedCustomer == null) return;
 
-        using (var dlg = new CustomerPaymentForm(_creditService, _selectedCustomer, 1)) // TODO: UserID
+        using (var dlg = new CustomerPaymentForm(_creditService, _selectedCustomer, _currentUser.UserID))
         {
             if (dlg.ShowDialog() == DialogResult.OK)
             {
@@ -521,9 +582,11 @@ public partial class POSCheckoutForm : Form
         try
         {
             var (subtotal, tax, total) = _cartManager.CalculateTotals();
+            var totalAfterDiscount = Math.Max(0, total - _appliedDiscount);
+            var totalWithPoints = Math.Max(0, totalAfterDiscount - _redeemedPointsValue);
 
             // Open payment dialog
-            var paymentDialog = new PaymentDialog(_paymentService, _creditService, total, _selectedCustomer);
+            var paymentDialog = new PaymentDialog(_paymentService, _creditService, totalWithPoints, _selectedCustomer, _currentUser.UserID);
             if (paymentDialog.ShowDialog() != DialogResult.OK)
             {
                 return;
@@ -533,14 +596,15 @@ public partial class POSCheckoutForm : Form
             var saleDto = new SaleDto
             {
                 CustomerID = _selectedCustomer?.CustomerID, 
-                CashierID = 1, // TODO: Get from logged-in user
+                CashierID = _currentUser.UserID,
                 Subtotal = subtotal,
                 TaxAmount = tax,
-                DiscountAmount = 0,
-                TotalAmount = total,
+                DiscountAmount = _appliedDiscount + _redeemedPointsValue,
+                TotalAmount = totalWithPoints,
                 AmountPaid = paymentDialog.TotalPaid,
                 ChangeGiven = paymentDialog.Change,
                 PaymentStatus = PaymentStatus.Paid,
+                Notes = BuildSaleNotes(),
                 SaleItems = _cartManager.Items.Select(item => new SaleItemDto
                 {
                     ProductID = item.ProductID,
@@ -586,6 +650,14 @@ public partial class POSCheckoutForm : Form
             // Clear cart
             _cartManager.Clear();
             _txtSearch.Clear();
+            _txtDiscountCode.Clear();
+            _appliedDiscount = 0;
+            _appliedDiscountCode = string.Empty;
+            _redeemedPointsValue = 0;
+            _chkRedeemPoints.Checked = false;
+            _lblDiscountInfo.Text = "";
+            _lblPointsInfo.Text = "";
+            UpdateCartDisplay();
         }
         catch (Exception ex)
         {
@@ -604,11 +676,26 @@ public partial class POSCheckoutForm : Form
         _gridCart.DataSource = _cartManager.Items.ToList();
 
         var (subtotal, tax, total) = _cartManager.CalculateTotals();
+        var totalAfterDiscount = Math.Max(0, total - _appliedDiscount);
+        var totalAfterPoints = Math.Max(0, totalAfterDiscount - _redeemedPointsValue);
+
         _lblSubtotal.Text = $"Subtotal: {subtotal:C2}";
         _lblTax.Text = $"Tax: {tax:C2}";
-        _lblTotal.Text = $"TOTAL: {total:C2}";
+        _lblDiscount.Text = $"Discount: -{_appliedDiscount:C2}";
+        _lblDiscount.Visible = _appliedDiscount > 0;
+        _lblTotal.Text = $"TOTAL: {totalAfterPoints:C2}";
 
         _btnCompleteSale.Enabled = _cartManager.HasItems();
+    }
+
+    private string? BuildSaleNotes()
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(_appliedDiscountCode))
+            parts.Add($"Discount: {_appliedDiscountCode}");
+        if (_redeemedPointsValue > 0)
+            parts.Add($"Points redeemed: -{_redeemedPointsValue:C2}");
+        return parts.Count > 0 ? string.Join("; ", parts) : null;
     }
 
     private void POSCheckoutForm_KeyDown(object? sender, KeyEventArgs e)
@@ -617,6 +704,79 @@ public partial class POSCheckoutForm : Form
         {
             BtnCompleteSale_Click(sender, e);
         }
+    }
+
+    private async void BtnApplyDiscount_Click(object? sender, EventArgs e)
+    {
+        if (_discountService == null)
+        {
+            MessageBox.Show("Discount service not available.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var code = _txtDiscountCode.Text.Trim();
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            _appliedDiscount = 0;
+            _appliedDiscountCode = string.Empty;
+            _lblDiscountInfo.Text = "";
+            UpdateCartDisplay();
+            return;
+        }
+
+        try
+        {
+            var (subtotal, _, _) = _cartManager.CalculateTotals();
+            var discountAmount = await _discountService.CalculateDiscountAsync(code, subtotal);
+
+            if (discountAmount > 0)
+            {
+                _appliedDiscount = discountAmount;
+                _appliedDiscountCode = code;
+                _lblDiscountInfo.Text = $"Discount applied: -{discountAmount:C2}";
+                _lblDiscountInfo.ForeColor = AppTheme.SuccessColor;
+            }
+            else
+            {
+                _appliedDiscount = 0;
+                _appliedDiscountCode = string.Empty;
+                _lblDiscountInfo.Text = "Invalid or expired discount code";
+                _lblDiscountInfo.ForeColor = AppTheme.DangerColor;
+            }
+
+            UpdateCartDisplay();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error applying discount: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void ChkRedeemPoints_CheckedChanged(object? sender, EventArgs e)
+    {
+        if (_selectedCustomer == null)
+        {
+            _chkRedeemPoints.Checked = false;
+            _lblPointsInfo.Text = "Select a customer first";
+            return;
+        }
+
+        if (_chkRedeemPoints.Checked)
+        {
+            var points = _selectedCustomer.LoyaltyPoints;
+            var pointValue = points * 0.01m; // 1 point = $0.01
+            var (subtotal, _, _) = _cartManager.CalculateTotals();
+            var maxRedeemable = Math.Min(pointValue, Math.Max(0, subtotal - _appliedDiscount));
+            _redeemedPointsValue = maxRedeemable;
+            _lblPointsInfo.Text = $"Redeeming {points} points (-{maxRedeemable:C2})";
+        }
+        else
+        {
+            _redeemedPointsValue = 0;
+            _lblPointsInfo.Text = "";
+        }
+
+        UpdateCartDisplay();
     }
 
     protected override void OnKeyPress(KeyPressEventArgs e)

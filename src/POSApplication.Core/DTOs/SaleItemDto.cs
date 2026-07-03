@@ -14,4 +14,6 @@ public class SaleItemDto
     public decimal TaxRate { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal LineTotal { get; set; }
+    public bool IsReturned { get; set; }
+    public decimal ReturnedQuantity { get; set; }
 }

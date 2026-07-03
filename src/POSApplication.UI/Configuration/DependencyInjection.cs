@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FluentValidation;
 using POSApplication.Core.Interfaces;
 using POSApplication.Data.Context;
 using POSApplication.Core.Entities;
@@ -50,16 +51,26 @@ public static class DependencyInjection
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<ICreditService, CreditService>();
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<IDiscountService, DiscountService>();
+        services.AddScoped<IReturnService, ReturnService>();
 
         // Forms
         services.AddTransient<LoginForm>();
         services.AddTransient<MainForm>();
         services.AddTransient<CustomerManagementForm>();
         services.AddTransient<CustomerEditDialog>();
+        services.AddTransient<CategoryManagementForm>();
+        services.AddTransient<SupplierManagementForm>();
+
+        // Validators
+        services.AddValidatorsFromAssembly(typeof(POSApplication.Core.Validators.CustomerDtoValidator).Assembly);
 
         // Infrastructure Services
         services.AddSingleton<IPrinterService, ThermalPrinterService>();
         services.AddSingleton<IBarcodeService, BarcodeService>();
+        services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
         return services.BuildServiceProvider();
     }

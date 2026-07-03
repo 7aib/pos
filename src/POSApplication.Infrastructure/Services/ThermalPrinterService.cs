@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using POSApplication.Core.DTOs;
 using POSApplication.Infrastructure.Interfaces;
 
@@ -9,6 +10,9 @@ namespace POSApplication.Infrastructure.Services;
 /// </summary>
 public class ThermalPrinterService : IPrinterService
 {
+    private readonly string _storeName;
+    private readonly string _storeAddress;
+    private readonly string _storePhone;
     private const string DefaultPrinterName = ""; // Will use default printer if empty
 
     // ESC/POS Commands
@@ -18,6 +22,13 @@ public class ThermalPrinterService : IPrinterService
     private static readonly byte[] ESC_BOLD_ON = { 0x1B, 0x45, 0x01 }; // Bold ON
     private static readonly byte[] ESC_BOLD_OFF = { 0x1B, 0x45, 0x00 }; // Bold OFF
     private static readonly byte[] ESC_CUT = { 0x1D, 0x56, 0x00 }; // Cut paper
+
+    public ThermalPrinterService(IConfiguration configuration)
+    {
+        _storeName = configuration["StoreSettings:StoreName"] ?? "My Store";
+        _storeAddress = configuration["StoreSettings:Address"] ?? "123 Main Street";
+        _storePhone = configuration["StoreSettings:Phone"] ?? "(555) 123-4567";
+    }
 
     public async Task<bool> PrintReceiptAsync(SaleDto sale)
     {
@@ -74,9 +85,9 @@ public class ThermalPrinterService : IPrinterService
         
         // Store header
         sb.AppendLine("================================");
-        sb.AppendLine("         MY STORE");
-        sb.AppendLine("     123 Main Street");
-        sb.AppendLine("   Phone: (555) 123-4567");
+        sb.AppendLine($"         {_storeName.ToUpper()}");
+        sb.AppendLine($"     {_storeAddress}");
+        sb.AppendLine($"   Phone: {_storePhone}");
         sb.AppendLine("================================");
         sb.AppendLine();
         

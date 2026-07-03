@@ -32,13 +32,18 @@ namespace POSApplication.UI
             fileToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem = new ToolStripMenuItem();
             salesToolStripMenuItem = new ToolStripMenuItem();
+            newSaleToolStripMenuItem = new ToolStripMenuItem();
+            processReturnToolStripMenuItem = new ToolStripMenuItem();
             customersToolStripMenuItem = new ToolStripMenuItem();
             inventoryToolStripMenuItem = new ToolStripMenuItem();
             productsToolStripMenuItem = new ToolStripMenuItem();
-            reportsToolStripMenuItem = new ToolStripMenuItem();
+            categoriesToolStripMenuItem = new ToolStripMenuItem();
+            suppliersToolStripMenuItem = new ToolStripMenuItem();
             reportsToolStripMenuItem = new ToolStripMenuItem();
             settingsToolStripMenuItem = new ToolStripMenuItem();
             manageUsersToolStripMenuItem = new ToolStripMenuItem();
+            storeSettingsToolStripMenuItem = new ToolStripMenuItem();
+            discountsToolStripMenuItem = new ToolStripMenuItem();
             changePasswordToolStripMenuItem = new ToolStripMenuItem();
             logoutToolStripMenuItem = new ToolStripMenuItem();
             statusStrip1 = new StatusStrip();
@@ -85,13 +90,27 @@ namespace POSApplication.UI
             exitToolStripMenuItem.Size = new Size(180, 22);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
-            // 
+            //
             // salesToolStripMenuItem
-            // 
+            //
+            salesToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newSaleToolStripMenuItem, processReturnToolStripMenuItem });
             salesToolStripMenuItem.Name = "salesToolStripMenuItem";
             salesToolStripMenuItem.Size = new Size(45, 20);
             salesToolStripMenuItem.Text = "Sales";
-            salesToolStripMenuItem.Click += salesToolStripMenuItem_Click;
+            //
+            // newSaleToolStripMenuItem
+            //
+            newSaleToolStripMenuItem.Name = "newSaleToolStripMenuItem";
+            newSaleToolStripMenuItem.Size = new Size(160, 22);
+            newSaleToolStripMenuItem.Text = "New Sale";
+            newSaleToolStripMenuItem.Click += salesToolStripMenuItem_Click;
+            //
+            // processReturnToolStripMenuItem
+            //
+            processReturnToolStripMenuItem.Name = "processReturnToolStripMenuItem";
+            processReturnToolStripMenuItem.Size = new Size(160, 22);
+            processReturnToolStripMenuItem.Text = "Process Return";
+            processReturnToolStripMenuItem.Click += processReturnToolStripMenuItem_Click;
             // 
             // customersToolStripMenuItem
             // 
@@ -102,7 +121,7 @@ namespace POSApplication.UI
             // 
             // inventoryToolStripMenuItem
             // 
-            inventoryToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { productsToolStripMenuItem });
+            inventoryToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { productsToolStripMenuItem, categoriesToolStripMenuItem, suppliersToolStripMenuItem });
             inventoryToolStripMenuItem.Name = "inventoryToolStripMenuItem";
             inventoryToolStripMenuItem.Size = new Size(69, 20);
             inventoryToolStripMenuItem.Text = "Inventory";
@@ -113,6 +132,20 @@ namespace POSApplication.UI
             productsToolStripMenuItem.Size = new Size(122, 22);
             productsToolStripMenuItem.Text = "Products";
             productsToolStripMenuItem.Click += productsToolStripMenuItem_Click;
+            // 
+            // categoriesToolStripMenuItem
+            // 
+            categoriesToolStripMenuItem.Name = "categoriesToolStripMenuItem";
+            categoriesToolStripMenuItem.Size = new Size(122, 22);
+            categoriesToolStripMenuItem.Text = "Categories";
+            categoriesToolStripMenuItem.Click += categoriesToolStripMenuItem_Click;
+            // 
+            // suppliersToolStripMenuItem
+            // 
+            suppliersToolStripMenuItem.Name = "suppliersToolStripMenuItem";
+            suppliersToolStripMenuItem.Size = new Size(122, 22);
+            suppliersToolStripMenuItem.Text = "Suppliers";
+            suppliersToolStripMenuItem.Click += suppliersToolStripMenuItem_Click;
             // 
             // reportsToolStripMenuItem
             // 
@@ -125,7 +158,7 @@ namespace POSApplication.UI
             // 
             // settingsToolStripMenuItem
             // 
-            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { manageUsersToolStripMenuItem });
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { manageUsersToolStripMenuItem, storeSettingsToolStripMenuItem, discountsToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new Size(61, 20);
             settingsToolStripMenuItem.Text = "Settings";
@@ -136,6 +169,20 @@ namespace POSApplication.UI
             manageUsersToolStripMenuItem.Size = new Size(180, 22);
             manageUsersToolStripMenuItem.Text = "Manage Users";
             manageUsersToolStripMenuItem.Click += manageUsersToolStripMenuItem_Click;
+            // 
+            // storeSettingsToolStripMenuItem
+            // 
+            storeSettingsToolStripMenuItem.Name = "storeSettingsToolStripMenuItem";
+            storeSettingsToolStripMenuItem.Size = new Size(180, 22);
+            storeSettingsToolStripMenuItem.Text = "Store Settings";
+            storeSettingsToolStripMenuItem.Click += storeSettingsToolStripMenuItem_Click;
+            // 
+            // discountsToolStripMenuItem
+            // 
+            discountsToolStripMenuItem.Name = "discountsToolStripMenuItem";
+            discountsToolStripMenuItem.Size = new Size(180, 22);
+            discountsToolStripMenuItem.Text = "Discounts";
+            discountsToolStripMenuItem.Click += discountsToolStripMenuItem_Click;
             // 
             // statusStrip1
             // 
@@ -168,7 +215,7 @@ namespace POSApplication.UI
             labelWelcome.Name = "labelWelcome";
             labelWelcome.Size = new Size(1000, 100);
             labelWelcome.TabIndex = 2;
-            labelWelcome.Text = "Welcome to POS Application\r\nPhase 2 - Backend Complete";
+            labelWelcome.Text = "Welcome to POS Application";
             labelWelcome.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // MainForm
@@ -199,12 +246,18 @@ namespace POSApplication.UI
         private ToolStripMenuItem logoutToolStripMenuItem;
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripMenuItem salesToolStripMenuItem;
+        private ToolStripMenuItem newSaleToolStripMenuItem;
+        private ToolStripMenuItem processReturnToolStripMenuItem;
         private ToolStripMenuItem customersToolStripMenuItem;
         private ToolStripMenuItem inventoryToolStripMenuItem;
         private ToolStripMenuItem productsToolStripMenuItem;
+        private ToolStripMenuItem categoriesToolStripMenuItem;
+        private ToolStripMenuItem suppliersToolStripMenuItem;
         private ToolStripMenuItem reportsToolStripMenuItem;
         private ToolStripMenuItem settingsToolStripMenuItem;
         private ToolStripMenuItem manageUsersToolStripMenuItem;
+        private ToolStripMenuItem storeSettingsToolStripMenuItem;
+        private ToolStripMenuItem discountsToolStripMenuItem;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripStatusLabel toolStripStatusUser;

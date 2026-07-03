@@ -9,28 +9,34 @@ namespace POSApplication.UI.Forms;
 public partial class ProductEditDialog : Form
 {
     private readonly IProductService _productService;
+    private readonly ICategoryService? _categoryService;
     private readonly ProductDto? _existingProduct;
     private bool _isEditMode;
+    private ComboBox? _cmbCategory;
 
     public ProductDto? Product { get; private set; }
 
     // Constructor for Add mode
-    public ProductEditDialog(IProductService productService)
+    public ProductEditDialog(IProductService productService, ICategoryService? categoryService = null)
     {
         _productService = productService;
+        _categoryService = categoryService;
         _isEditMode = false;
         InitializeComponent();
         this.Text = "Add Product";
+        LoadCategories();
     }
 
     // Constructor for Edit mode
-    public ProductEditDialog(IProductService productService, ProductDto product)
+    public ProductEditDialog(IProductService productService, ProductDto product, ICategoryService? categoryService = null)
     {
         _productService = productService;
+        _categoryService = categoryService;
         _existingProduct = product;
         _isEditMode = true;
         InitializeComponent();
         this.Text = "Edit Product";
+        LoadCategories();
         LoadProductData();
     }
 
@@ -76,7 +82,10 @@ public partial class ProductEditDialog : Form
         var lblUnitOfMeasure = new Label { Text = "Unit of Measure:", Location = new Point(20, 405), Width = 120 };
         var txtUnitOfMeasure = new TextBox { Name = "txtUnitOfMeasure", Location = new Point(150, 403), Width = 140 };
 
-        var chkIsActive = new CheckBox { Name = "chkIsActive", Text = "Active", Location = new Point(150, 438), Checked = true };
+        var lblCategory = new Label { Text = "Category:", Location = new Point(20, 440), Width = 120 };
+        _cmbCategory = new ComboBox { Name = "cmbCategory", Location = new Point(150, 438), Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
+
+        var chkIsActive = new CheckBox { Name = "chkIsActive", Text = "Active", Location = new Point(150, 470), Checked = true };
 
         // Buttons
         var btnSave = new Button 
@@ -114,12 +123,30 @@ public partial class ProductEditDialog : Form
             lblMinStock, txtMinStock,
             lblReorderPoint, txtReorderPoint,
             lblUnitOfMeasure, txtUnitOfMeasure,
+            lblCategory, _cmbCategory,
             chkIsActive,
             btnSave, btnCancel
         });
 
         this.AcceptButton = btnSave;
         this.CancelButton = btnCancel;
+    }
+
+    private async void LoadCategories()
+    {
+        if (_categoryService == null) return;
+        try
+        {
+            var categories = (await _categoryService.GetActiveCategoriesAsync()).ToList();
+            _cmbCategory?.Items.Clear();
+            _cmbCategory?.Items.Add(new CategoryComboItem { CategoryID = 0, CategoryName = "(None)" });
+            foreach (var cat in categories)
+            {
+                _cmbCategory?.Items.Add(new CategoryComboItem { CategoryID = cat.CategoryID, CategoryName = cat.CategoryName });
+            }
+            _cmbCategory.SelectedIndex = 0;
+        }
+        catch { }
     }
 
     private void LoadProductData()
@@ -138,6 +165,19 @@ public partial class ProductEditDialog : Form
         GetControl<NumericUpDown>("txtReorderPoint").Value = _existingProduct.ReorderPoint ?? 0;
         GetControl<TextBox>("txtUnitOfMeasure").Text = _existingProduct.UnitOfMeasure ?? string.Empty;
         GetControl<CheckBox>("chkIsActive").Checked = _existingProduct.IsActive;
+
+        if (_cmbCategory != null)
+        {
+            for (int i = 0; i < _cmbCategory.Items.Count; i++)
+            {
+                var item = _cmbCategory.Items[i] as CategoryComboItem;
+                if (item != null && item.CategoryID == _existingProduct.CategoryID)
+                {
+                    _cmbCategory.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     private async void BtnSave_Click(object? sender, EventArgs e)
@@ -168,6 +208,10 @@ public partial class ProductEditDialog : Form
             }
 
             // Create DTO
+            var categoryId = 0;
+            if (_cmbCategory?.SelectedItem is CategoryComboItem selectedCat)
+                categoryId = selectedCat.CategoryID;
+
             var productDto = new ProductDto
             {
                 ProductID = _existingProduct?.ProductID ?? 0,
@@ -175,6 +219,7 @@ public partial class ProductEditDialog : Form
                 Barcode = GetControl<TextBox>("txtBarcode").Text.Trim(),
                 ProductName = productName,
                 Description = GetControl<TextBox>("txtDescription").Text.Trim(),
+                CategoryID = categoryId,
                 CostPrice = GetControl<NumericUpDown>("txtCostPrice").Value,
                 SellPrice = sellPrice,
                 TaxRate = GetControl<NumericUpDown>("txtTaxRate").Value,
@@ -211,4 +256,11 @@ public partial class ProductEditDialog : Form
     {
         return (T)this.Controls.Find(name, false).First();
     }
+}
+
+public class CategoryComboItem
+{
+    public int CategoryID { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public override string ToString() => CategoryName;
 }

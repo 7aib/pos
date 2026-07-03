@@ -9,7 +9,7 @@ public interface ISalesService
 {
     Task<SaleDto> CreateSaleAsync(SaleDto sale);
     Task<SaleDto?> GetSaleByIdAsync(int saleId);
-    Task<bool> VoidSaleAsync(int saleId, int userId, string reason);
+    Task<bool> VoidSaleAsync(int saleId, string reason);
     Task<(decimal Subtotal, decimal TaxAmount, decimal Total)> CalculateSaleTotalsAsync(
         List<CartItemDto> items, decimal discountAmount);
 }

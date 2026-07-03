@@ -40,14 +40,20 @@ public enum CreditTransactionType
     Adjustment
 }
 
-public enum StockAdjustmentType
-{
-    StockIn,
-    StockOut,
-    Correction,
-    Damage,
-    Theft
-}
+    public enum StockAdjustmentType
+    {
+        StockIn,
+        StockOut,
+        Correction,
+        Damage,
+        Theft
+    }
+
+    public enum DiscountType
+    {
+        Percentage,
+        FixedAmount
+    }
 
 public enum RefundMethod
 {

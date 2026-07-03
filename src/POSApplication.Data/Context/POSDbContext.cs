@@ -21,6 +21,7 @@ public class POSDbContext : DbContext
     public DbSet<CreditAccount> CreditAccounts { get; set; }
     public DbSet<CreditTransaction> CreditTransactions { get; set; }
     public DbSet<StockAdjustment> StockAdjustments { get; set; }
+    public DbSet<Discount> Discounts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -240,6 +241,20 @@ public class POSDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.AdjustedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Discount entity configuration
+        modelBuilder.Entity<Discount>(entity =>
+        {
+            entity.HasKey(e => e.DiscountID);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(200);
+            entity.Property(e => e.Value).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.MaxDiscountAmount).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.MinPurchaseAmount).HasColumnType("decimal(10,2)");
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.HasIndex(e => e.StartDate);
+            entity.HasIndex(e => e.EndDate);
         });
 
         // Seed Default Admin User - Moved to SeedData.cs

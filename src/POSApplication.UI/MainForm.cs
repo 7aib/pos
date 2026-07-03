@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using POSApplication.Core.Interfaces;
 using POSApplication.Infrastructure.Interfaces;
+using POSApplication.Infrastructure.Services;
 using POSApplication.Core.Entities;
 using POSApplication.Data.Interfaces;
 using POSApplication.UI.Forms;
@@ -18,7 +20,7 @@ public partial class MainForm : Form
         _serviceProvider = serviceProvider;
         _currentUser = currentUser;
         InitializeComponent();
-        this.Text = "POS Application - Phase 3";
+        this.Text = "POS Application";
         
         toolStripStatusUser.Text = $"User: {_currentUser.FullName} ({_currentUser.Role})";
         
@@ -61,6 +63,7 @@ public partial class MainForm : Form
         var inventoryService = _serviceProvider.GetRequiredService<IInventoryService>();
         var creditService = _serviceProvider.GetRequiredService<ICreditService>();
         var customerRepository = _serviceProvider.GetRequiredService<ICustomerRepository>();
+        var discountService = _serviceProvider.GetService<IDiscountService>();
 
         var checkoutForm = new POSCheckoutForm(
             productService, 
@@ -71,8 +74,16 @@ public partial class MainForm : Form
             inventoryService,
             customerRepository,
             _serviceProvider,
-            _currentUser);
+            _currentUser,
+            discountService);
         checkoutForm.ShowDialog();
+    }
+
+    private void processReturnToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var returnService = _serviceProvider.GetRequiredService<IReturnService>();
+        var form = new ReturnForm(returnService, _currentUser.UserID);
+        form.ShowDialog();
     }
 
     private void customersToolStripMenuItem_Click(object sender, EventArgs e)
@@ -87,8 +98,23 @@ public partial class MainForm : Form
     {
         // Open Product Management form
         var productService = _serviceProvider.GetRequiredService<IProductService>();
+        var categoryService = _serviceProvider.GetRequiredService<ICategoryService>();
         var productManagementForm = new ProductManagementForm(productService);
         productManagementForm.ShowDialog();
+    }
+
+    private void categoriesToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var categoryService = _serviceProvider.GetRequiredService<ICategoryService>();
+        var form = new CategoryManagementForm(categoryService);
+        form.ShowDialog();
+    }
+
+    private void suppliersToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var supplierService = _serviceProvider.GetRequiredService<ISupplierService>();
+        var form = new SupplierManagementForm(supplierService);
+        form.ShowDialog();
     }
 
     private void reportsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -103,5 +129,19 @@ public partial class MainForm : Form
         var userService = _serviceProvider.GetRequiredService<IUserService>();
         var userForm = new UserManagementForm(userService);
         userForm.ShowDialog();
+    }
+
+    private void storeSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var configuration = _serviceProvider.GetRequiredService<IConfiguration>();
+        var settingsForm = new SettingsForm(configuration);
+        settingsForm.ShowDialog();
+    }
+
+    private void discountsToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        var discountService = _serviceProvider.GetRequiredService<IDiscountService>();
+        var form = new DiscountManagementForm(discountService);
+        form.ShowDialog();
     }
 }
